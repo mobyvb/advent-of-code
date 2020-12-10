@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"regexp"
@@ -27,9 +26,8 @@ func yearValidation(min, max int) fieldValidation {
 }
 
 func main() {
-	// TODO
-	requiredKeys := map[string]*regexp.Regexp{
-		"byr": regexp.MustCompile(1920, 2002),
+	requiredKeys := map[string]fieldValidation{
+		"byr": yearValidation(1920, 2002),
 		"iyr": yearValidation(2010, 2020),
 		"eyr": yearValidation(2020, 2030),
 		"hgt": func(s string) bool {
@@ -52,38 +50,22 @@ func main() {
 			return true
 		},
 		"hcl": func(s string) bool {
-			if s[0] != '#' {
+			if len(s) != 7 {
 				return false
 			}
-			hexValue := s[1:]
-			if len(hexValue) != 6 {
-				return false
-			}
-			_, err := hex.DecodeString(hexValue)
-			if err != nil {
-				return false
-			}
-			return true
+			match, _ := regexp.MatchString("#([0-9]|[a-f]){6}", s)
+			return match
 		},
 		"ecl": func(s string) bool {
-			validColors := []string{"amb", "blu", "brn", "gry", "hzl", "oth"}
-			for _, color := range validColors {
-				if s == color {
-					return true
-				}
-			}
-			return false
+			match, _ := regexp.MatchString("amb|blu|brn|gry|grn|hzl|oth", s)
+			return match
 		},
 		"pid": func(s string) bool {
 			if len(s) != 9 {
 				return false
 			}
-			_, err := strconv.Atoi(s)
-			if err != nil {
-				fmt.Println(err)
-				return false
-			}
-			return true
+			match, _ := regexp.MatchString("[0-9]{9}", s)
+			return match
 		},
 		// "cid",
 	}
