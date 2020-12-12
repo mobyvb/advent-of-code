@@ -34,7 +34,8 @@ func main() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
-	values := []int{}
+	// first node is 0
+	values := []int{0}
 	for _, line := range fileTextLines {
 		if line == "" {
 			continue
@@ -47,6 +48,9 @@ func main() {
 	}
 
 	sort.IntSlice(values).Sort()
+	// last node is 3 higher than current highest value
+	values = append(values, values[len(values)-1]+3)
+
 	allNodes = make(map[int]*node)
 	numPaths = make(map[int]map[int]int)
 
@@ -76,11 +80,19 @@ func main() {
 			numPaths[nextNode.value][neighbor.value] = 1
 		}
 	}
-	fmt.Println("------------------")
-	for _, n := range allNodes {
-		for _, x := range n.neighbors {
-			fmt.Printf("%d -> %d\n", n.value, x.value)
-		}
-	}
+	fmt.Println(findNumPaths(values[0], values[len(values)-1]))
 
+}
+
+func findNumPaths(start, end int) int {
+	if numPaths[start][end] > 0 {
+		return numPaths[start][end]
+	}
+	startNode := allNodes[start]
+	pathCount := 0
+	for _, neighbor := range startNode.neighbors {
+		pathCount += findNumPaths(neighbor.value, end)
+	}
+	numPaths[start][end] = pathCount
+	return pathCount
 }
