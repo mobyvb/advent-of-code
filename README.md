@@ -11,4 +11,5 @@ https://adventofcode.com/2020
 * Day 9: Encoding Error 
 * Day 10: Adapter Array 
 * Day 11: Seating System 
-* Day 12: Ship storm navigation
+* Day 12: Rain Risk 
+* Day 13: Shuttle Search
