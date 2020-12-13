@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+type Bus struct {
+	frequency     int
+	desiredOffset int
+}
+
 func main() {
 	inputPath := os.Args[1]
 	inputFile, err := os.Open(inputPath)
@@ -24,15 +29,10 @@ func main() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
-	departTime, err := strconv.Atoi(fileTextLines[0])
-	if err != nil {
-		panic(err)
-	}
 	busesString := fileTextLines[1]
 	busesStringList := strings.Split(busesString, ",")
-	minDepartTime := -1
-	minDepartID := 0
-	for _, id := range busesStringList {
+	allBuses := []*Bus{}
+	for i, id := range busesStringList {
 		if id == "x" {
 			continue
 		}
@@ -40,14 +40,56 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		previousDepartTime := departTime - departTime%frequency
-		nextDepartTime := previousDepartTime + frequency
-		if minDepartTime == -1 || nextDepartTime < minDepartTime {
-			minDepartTime = nextDepartTime
-			minDepartID = frequency
-		}
+		allBuses = append(allBuses, &Bus{
+			frequency:     frequency,
+			desiredOffset: i,
+		})
 	}
-	minsTillDeparture := minDepartTime - departTime
-	fmt.Println(minDepartID * minsTillDeparture)
 
+	t := 0
+	inc := 1
+	currentBusIndex := 0
+	for {
+		currentBus := allBuses[currentBusIndex]
+		// if the current bus would arrive the correct offset after t,
+		// it will always arrive at the correct offset at t + k*lcm(inc, freq)
+		// since inc is also a valid multiple for the previous buses checked, the new inc value
+		// will be valid for all previous buses, and we don't need to check them again.
+		if (t+currentBus.desiredOffset)%currentBus.frequency == 0 {
+			// if this is the last bus, we are done
+			if currentBusIndex == len(allBuses)-1 {
+				break
+			}
+			inc = lcm(inc, currentBus.frequency)
+			// check other buses in case we found the value early
+			allValid := true
+			for i := currentBusIndex + 1; i < len(allBuses); i++ {
+				if (t+allBuses[i].desiredOffset)%allBuses[i].frequency != 0 {
+					allValid = false
+					break
+				}
+			}
+			if allValid {
+				break
+			}
+			currentBusIndex++
+		}
+		t += inc
+	}
+	fmt.Println(t)
+}
+
+func lcm(a, b int) int {
+	return a * b / gcd(a, b)
+
+}
+
+// from https://play.golang.org/p/SmzvkDjYlb
+func gcd(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
 }
