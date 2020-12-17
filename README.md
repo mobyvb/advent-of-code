@@ -15,3 +15,4 @@ https://adventofcode.com/2020
 * Day 13: Shuttle Search
 * Day 14: Docking Data
 * Day 15: Rambunctious Recitation
+* Day 16: Ticket Translation 
