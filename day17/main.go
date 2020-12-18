@@ -191,7 +191,6 @@ func main() {
 		part1State = newPart1State
 
 		newPart2State := &Dimension{}
-		totalActive := 0
 		// TODO why doesn't dimension.Iterate work for 4 dimensions??
 		// for some reason it is not iterating over all possibilities, so I am manually iterating below
 		for w := part2State.bounds[0][0]; w <= part2State.bounds[0][1]; w++ {
@@ -206,10 +205,6 @@ func main() {
 						} else {
 							newPart2State.Set([]int{w, z, y, x}, inactive)
 						}
-						if isActive {
-							totalActive++
-						}
-
 					}
 				}
 			}

@@ -32,6 +32,8 @@ func main() {
 	mustContain := make(map[string][]containRule)
 	canBeContainedBy := make(map[string][]string)
 	for _, rule := range fileTextLines {
+		// TODO look into parser generators
+		// pegjs.org/online
 		rule = strings.TrimSpace(rule)
 		if rule == "" {
 			continue

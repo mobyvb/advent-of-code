@@ -15,8 +15,25 @@ type node struct {
 
 var allNodes map[int]*node
 
+// use slice []*node
+
 // look up numPaths[a][b] to get number of known paths between node.value a and node.value b
 var numPaths map[int]map[int]int
+
+// TODO benchmark
+/*
+type edge struct {
+	from int
+	to   int
+}
+// edge -> count
+map[edge]int
+
+*/
+
+// performance - end up avoiding a lot of allocations, map lookups
+// a -> b: a*len(nodes) + b
+// var numPaths []int
 
 func main() {
 	inputPath := os.Args[1]
