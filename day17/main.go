@@ -13,13 +13,137 @@ const (
 )
 
 var (
-	// describe current bounds of the state (all coordinates which could have an active cell)
-	xBounds, yBounds, zBounds [2]int
-	// maps because grid is arbitrarily sized and needs to support negative keys
-	// z, y, x
-	// TODO figure out how to do it with a single array
-	state map[int]map[int]map[int]rune
+	part1State, part2State *Dimension
 )
+
+type Dimension struct {
+	bounds       [][2]int
+	subDimension map[int]*Dimension
+	// for lowest level dimension
+	values map[int]rune
+}
+
+func (d *Dimension) Set(coords []int, v rune) {
+	d.setBounds(coords)
+
+	i := coords[0]
+	if len(coords) == 1 {
+		if d.values == nil {
+			d.values = make(map[int]rune)
+		}
+		d.values[i] = v
+		return
+	}
+	if d.subDimension == nil {
+		d.subDimension = make(map[int]*Dimension)
+	}
+	if d.subDimension[i] == nil {
+		d.subDimension[i] = &Dimension{}
+	}
+	d.subDimension[i].Set(coords[1:], v)
+}
+
+func (d *Dimension) IsActive(coords []int) bool {
+	i := coords[0]
+	if len(coords) == 1 {
+		if d.values == nil {
+			d.values = make(map[int]rune)
+		}
+		return d.values[i] == active
+	}
+	if d.subDimension == nil {
+		d.subDimension = make(map[int]*Dimension)
+	}
+	if d.subDimension[i] == nil {
+		d.subDimension[i] = &Dimension{}
+	}
+	return d.subDimension[i].IsActive(coords[1:])
+}
+
+// setBounds sets the bounds defining all iterable coordinates for this dimension, including for lower dimensions.
+func (d *Dimension) setBounds(coords []int) {
+	if len(d.bounds) == 0 {
+		d.bounds = make([][2]int, len(coords))
+	}
+	for i, c := range coords {
+		b := d.bounds[i]
+		if c-1 < b[0] {
+			b[0] = c - 1
+		}
+		if c+1 > b[1] {
+			b[1] = c + 1
+		}
+		d.bounds[i] = b
+	}
+}
+
+func (d *Dimension) NumActiveAdjacent(coords []int, isTarget bool) (numActive int) {
+	if len(coords) == 1 {
+		i := coords[0]
+		if d.values[i-1] == active {
+			numActive++
+		}
+		if d.values[i+1] == active {
+			numActive++
+		}
+		if !isTarget && d.values[i] == active {
+			numActive++
+		}
+		return numActive
+	}
+	currentLayer := d.subDimension[coords[0]]
+	currentActive := 0
+	if currentLayer != nil {
+		currentActive = currentLayer.NumActiveAdjacent(coords[1:], isTarget)
+	}
+	lowerLayer := d.subDimension[coords[0]-1]
+	lowerActive := 0
+	if lowerLayer != nil {
+		lowerActive = lowerLayer.NumActiveAdjacent(coords[1:], false)
+	}
+	upperLayer := d.subDimension[coords[0]+1]
+	upperActive := 0
+	if upperLayer != nil {
+		upperActive = upperLayer.NumActiveAdjacent(coords[1:], false)
+	}
+	numActive = currentActive + upperActive + lowerActive
+	return numActive
+}
+
+func (d *Dimension) Iterate(cb func(coords []int, isActive bool)) {
+	for i := d.bounds[0][0]; i <= d.bounds[0][1]; i++ {
+		if d.values != nil {
+			cb([]int{i}, d.values[i] == active)
+		} else {
+			sd := d.subDimension[i]
+			if sd != nil {
+				sd.Iterate(func(sdCoords []int, isActive bool) {
+					c := append([]int{i}, sdCoords...)
+					cb(c, isActive)
+				})
+			} else {
+				coordList := [][]int{}
+				coordList = append(coordList, []int{i})
+				for j := 1; j < len(d.bounds); j++ {
+					b := d.bounds[j]
+					originalCoordListLen := len(coordList)
+					for k := 0; k < originalCoordListLen; k++ {
+						c := coordList[k]
+						coordList[k] = append(coordList[k], b[0])
+						for v := b[0] + 1; v <= b[1]; v++ {
+							nextCoord := append(c, v)
+							coordList = append(coordList, nextCoord)
+						}
+					}
+				}
+				for _, c := range coordList {
+					cb(c, false)
+				}
+			}
+
+		}
+	}
+}
 
 func main() {
 	inputPath := os.Args[1]
@@ -37,130 +161,75 @@ func main() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
-	zSlice := make(map[int]map[int]rune)
+	part1State := &Dimension{}
+	part2State := &Dimension{}
 	for y, line := range fileTextLines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		zSlice[y] = make(map[int]rune)
 		for x, coordState := range line {
-			zSlice[y][x] = coordState
+			part1State.Set([]int{0, y, x}, coordState)
+			part2State.Set([]int{0, 0, y, x}, coordState)
 		}
 	}
-	state = make(map[int]map[int]map[int]rune)
-	state[0] = zSlice
 
 	// min/max values are all 1 less or 1 more than the current active extremes in state.
 	// initial values just based on size of initial slice
-	zBounds = [2]int{-1, 1}
-	yBounds = [2]int{-1, len(state[0])}
-	xBounds = [2]int{-1, len(state[0][0])}
 
 	for cycle := 0; cycle < 6; cycle++ {
-		newState := make(map[int]map[int]map[int]rune)
-		newZBounds := [2]int{0, 0}
-		newYBounds := [2]int{0, 0}
-		newXBounds := [2]int{0, 0}
-		for z := zBounds[0]; z <= zBounds[1]; z++ {
-			newState[z] = make(map[int]map[int]rune)
-			for y := yBounds[0]; y <= yBounds[1]; y++ {
-				newState[z][y] = make(map[int]rune)
+		newPart1State := &Dimension{}
+		part1State.Iterate(func(coords []int, isActive bool) {
+			numAdjacent := part1State.NumActiveAdjacent(coords, true)
+			if (isActive && (numAdjacent == 2 || numAdjacent == 3)) ||
+				(!isActive && numAdjacent == 3) {
+				newPart1State.Set(coords, active)
+			} else {
+				newPart1State.Set(coords, inactive)
+			}
+		})
+		part1State = newPart1State
 
-				for x := xBounds[0]; x <= xBounds[1]; x++ {
-					v := state[z][y][x]
-					adjacent := activeAdjacent(x, y, z)
-					if (v == active && (adjacent == 2 || adjacent == 3)) ||
-						(v != active && adjacent == 3) {
-						newState[z][y][x] = active
-						// TODO move to helper
-						if z-1 < newZBounds[0] {
-							newZBounds[0] = z - 1
+		newPart2State := &Dimension{}
+		totalActive := 0
+		// TODO why doesn't dimension.Iterate work for 4 dimensions??
+		// for some reason it is not iterating over all possibilities, so I am manually iterating below
+		for w := part2State.bounds[0][0]; w <= part2State.bounds[0][1]; w++ {
+			for z := part2State.bounds[1][0]; z <= part2State.bounds[1][1]; z++ {
+				for y := part2State.bounds[2][0]; y <= part2State.bounds[2][1]; y++ {
+					for x := part2State.bounds[3][0]; x <= part2State.bounds[3][1]; x++ {
+						isActive := part2State.IsActive([]int{w, z, y, x})
+						numAdjacent := part2State.NumActiveAdjacent([]int{w, z, y, x}, true)
+						if (isActive && (numAdjacent == 2 || numAdjacent == 3)) ||
+							(!isActive && numAdjacent == 3) {
+							newPart2State.Set([]int{w, z, y, x}, active)
+						} else {
+							newPart2State.Set([]int{w, z, y, x}, inactive)
 						}
-						if z+1 > newZBounds[1] {
-							newZBounds[1] = z + 1
+						if isActive {
+							totalActive++
 						}
-						if y-1 < newYBounds[0] {
-							newYBounds[0] = y - 1
-						}
-						if y+1 > newYBounds[1] {
-							newYBounds[1] = y + 1
-						}
-						if x-1 < newXBounds[0] {
-							newXBounds[0] = x - 1
-						}
-						if x+1 > newXBounds[1] {
-							newXBounds[1] = x + 1
-						}
-					} else {
-						newState[z][y][x] = inactive
+
 					}
 				}
 			}
 		}
-		state = newState
-		zBounds = newZBounds
-		yBounds = newYBounds
-		xBounds = newXBounds
+		part2State = newPart2State
 	}
 
 	totalActive := 0
-	for _, zSlice := range state {
-		for _, ySlice := range zSlice {
-			for _, v := range ySlice {
-				if v == active {
-					totalActive++
-				}
-			}
+	part1State.Iterate(func(coords []int, isActive bool) {
+		if isActive {
+			totalActive++
 		}
-	}
+	})
 	fmt.Println(totalActive)
-}
 
-func printState() {
-	output := "newState:\n"
-	for z := zBounds[0]; z <= zBounds[1]; z++ {
-		for y := yBounds[0]; y <= yBounds[1]; y++ {
-			for x := xBounds[0]; x <= xBounds[1]; x++ {
-				v := state[z][y][x]
-				if v == active {
-					output += string(active)
-				} else {
-					output += string(inactive)
-				}
-			}
-			output += "\n"
+	totalActive = 0
+	part2State.Iterate(func(coords []int, isActive bool) {
+		if isActive {
+			totalActive++
 		}
-		output += "--------------\n"
-	}
-	fmt.Println(output)
-}
-
-func activeAdjacent(x, y, z int) int {
-	directions := [][3]int{
-		// "back" layer (z=-1)
-		{-1, -1, -1}, {0, -1, -1}, {1, -1, -1},
-		{-1, 0, -1}, {0, 0, -1}, {1, 0, -1},
-		{-1, 1, -1}, {0, 1, -1}, {1, 1, -1},
-		// "current" layer (z=0)
-		{-1, -1, 0}, {0, -1, 0}, {1, -1, 0},
-		{-1, 0, 0}, {1, 0, 0},
-		{-1, 1, 0}, {0, 1, 0}, {1, 1, 0},
-		// "front" layer  (z=1)
-		{-1, -1, 1}, {0, -1, 1}, {1, -1, 1},
-		{-1, 0, 1}, {0, 0, 1}, {1, 0, 1},
-		{-1, 1, 1}, {0, 1, 1}, {1, 1, 1},
-	}
-
-	numAdjacent := 0
-	for _, direction := range directions {
-		adjX := x + direction[0]
-		adjY := y + direction[1]
-		adjZ := z + direction[2]
-		if state[adjZ][adjY][adjX] == active {
-			numAdjacent++
-		}
-	}
-
-	return numAdjacent
+	})
+	fmt.Println(totalActive)
 }
