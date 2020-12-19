@@ -8,75 +8,6 @@ import (
 	"strings"
 )
 
-/*
-type Expression struct {
-	value         int
-	subExpression *Expression
-	operation     rune
-
-	next *Expression
-}
-
-func (e *Expression) Eval() int {
-	if e.subExpression != nil {
-		e.value = e.subExpression.Eval()
-	}
-	if e.next == nil {
-		return e.value
-	}
-	if e.operation == '*' {
-		return e.value * e.next.Eval()
-	}
-	return e.value + e.next.Eval()
-}
-
-func (e *Expression) AddValue(value int) {
-	current := e
-	for current.next != nil {
-		current = current.next
-	}
-	if current.subExpression == nil {
-		current.value = value
-		return
-	}
-	current.subExpression.AddValue(value)
-}
-
-func (e *Expression) AddOperation(operation rune) {
-	current := e
-	for current.next != nil {
-		current = current.next
-	}
-	if current.subExpression == nil {
-		current.operation = operation
-		return
-	}
-	current.subExpression.AddOperation(operation)
-}
-
-func (e *Expression) StartSubExpression() {
-	current := e
-	for current.next != nil {
-		current = current.next
-	}
-	if current.subExpression == nil {
-		current.subExpression = &Expression{}
-		return
-	}
-	current.subExpression.StartSubExpression()
-}
-
-func (e *Expression) EndSubExpression() {
-	current := e
-	for current.next != nil {
-		current = current.next
-	}
-	if current.subExpression == nil {
-		return
-	}
-}
-*/
-
 func main() {
 	inputPath := os.Args[1]
 	inputFile, err := os.Open(inputPath)
@@ -93,6 +24,11 @@ func main() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
+	part1(fileTextLines)
+	part2(fileTextLines)
+}
+
+func part1(fileTextLines []string) {
 	answerSums := 0
 	for _, line := range fileTextLines {
 		line = strings.TrimSpace(line)
@@ -140,4 +76,32 @@ func main() {
 		answerSums += answer
 	}
 	fmt.Println(answerSums)
+}
+
+// part2 evaluation is exactly like part 1, but beforehand, we surround all addition operations with parens, so they are evaluated first
+func part2(fileTextLines []string) {
+	part2Lines := []string{}
+	for _, line := range fileTextLines {
+		line = strings.TrimSpace(line)
+		line = strings.ReplaceAll(line, " ", "")
+		if line == "" {
+			continue
+		}
+		newLine := "("
+		for _, c := range line {
+			if c == '(' {
+				newLine += "(("
+			} else if c == ')' {
+				newLine += "))"
+			} else if c == '*' {
+				newLine += ")*("
+			} else {
+				newLine += string(c)
+			}
+		}
+		newLine += ")"
+		part2Lines = append(part2Lines, newLine)
+	}
+
+	part1(part2Lines)
 }
