@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -43,12 +44,13 @@ func main() {
 		allFood = append(allFood, newFood)
 	}
 
-	part1(allFood)
+	allergenMap := part1(allFood)
+	part2(allergenMap)
 }
 
-func part1(allFood []*Food) {
+func part1(allFood []*Food) (allergenMap map[string][]string) {
 	// allergenMap maps each allergen to a list of possible ingredients containing that allergen
-	allergenMap := make(map[string][]string)
+	allergenMap = make(map[string][]string)
 
 	for _, f := range allFood {
 		for _, a := range f.allergens {
@@ -93,7 +95,53 @@ func part1(allFood []*Food) {
 		}
 	}
 	fmt.Println(answer)
+	return allergenMap
 }
 
-func part2(allFood []*Food) {
+func part2(allergenMap map[string][]string) {
+	// another sudoku-style problem
+	// while we have not determined the ingredient associated with each allergen,
+	// iterate over all allergens, and find an allergen with only one ingredient
+	// this ingredient is now a danger food. Remove references to it and its allergens from the allergen map
+	type allergenPair struct {
+		ingredient string
+		allergen   string
+	}
+	dangerFoods := []*allergenPair{}
+	for len(allergenMap) > 0 {
+		newAllergenMap := make(map[string][]string)
+		for a, iList := range allergenMap {
+			if len(iList) == 1 {
+				newDangerFood := &allergenPair{
+					ingredient: iList[0],
+					allergen:   a,
+				}
+				dangerFoods = append(dangerFoods, newDangerFood)
+				for a2, iList := range allergenMap {
+					if a2 == a {
+						continue
+					}
+					for _, i := range iList {
+						if i == newDangerFood.ingredient {
+							continue
+						}
+						newAllergenMap[a2] = append(newAllergenMap[a2], i)
+					}
+				}
+
+				break
+			}
+		}
+		allergenMap = newAllergenMap
+	}
+	// sort dangerFoods alphabetically by allergen
+	sort.SliceStable(dangerFoods, func(i, j int) bool {
+		return strings.Compare(dangerFoods[i].allergen, dangerFoods[j].allergen) < 0
+	})
+	dangerIngredients := []string{}
+	for _, f := range dangerFoods {
+		dangerIngredients = append(dangerIngredients, f.ingredient)
+	}
+	canonicalDangerousIngredients := strings.Join(dangerIngredients, ",")
+	fmt.Println(canonicalDangerousIngredients)
 }
