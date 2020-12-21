@@ -37,6 +37,22 @@ func (t *Tile) GetEdges() []string {
 	return t.edges
 }
 
+func (t *Tile) TopEdge() string {
+	return t.GetEdges()[0]
+}
+
+func (t *Tile) BottomEdge() string {
+	return t.GetEdges()[2]
+}
+
+func (t *Tile) LeftEdge() string {
+	return t.GetEdges()[4]
+}
+
+func (t *Tile) RightEdge() string {
+	return t.GetEdges()[6]
+}
+
 // FlipVertical flips around a vertical access (each row is reversed)
 func (t *Tile) FlipVertical() *Tile {
 	newTile := &Tile{
@@ -189,4 +205,138 @@ func part1(allTiles map[int]*Tile) (corners []*Tile) {
 }
 
 func part2(allTiles map[int]*Tile, corners []*Tile) {
+	arrangement := constructArrangement(allTiles, corners)
+
+	output := ""
+	for _, row := range arrangement {
+		for _, t := range row {
+			output += strconv.Itoa(t.id) + " "
+		}
+		output += "\n"
+	}
+	fmt.Println(output)
+
+}
+
+func constructArrangement(allTiles map[int]*Tile, corners []*Tile) [][]*Tile {
+	// list of tile IDs that match each edge
+	edgeMatches := make(map[string][]int)
+	for _, t := range allTiles {
+		edges := t.GetEdges()
+		for _, e := range edges {
+			edgeMatches[e] = append(edgeMatches[e], t.id)
+		}
+	}
+
+	firstCorner := corners[0]
+	// rotate corner so that top and left edges are unmatched
+	topMatches := len(edgeMatches[firstCorner.TopEdge()])
+	leftMatches := len(edgeMatches[firstCorner.LeftEdge()])
+	for topMatches > 1 || leftMatches > 1 {
+		firstCorner = firstCorner.RotateClockwise()
+		topMatches = len(edgeMatches[firstCorner.TopEdge()])
+		leftMatches = len(edgeMatches[firstCorner.LeftEdge()])
+	}
+
+	foundTiles := make(map[int]bool)
+	foundTiles[firstCorner.id] = true
+	arrangement := [][]*Tile{}
+	arrangement = append(arrangement, []*Tile{})
+	arrangement[0] = append(arrangement[0], firstCorner)
+	for len(foundTiles) < len(allTiles) {
+		nextRowIndex := len(arrangement) - 1
+		nextColIndex := len(arrangement[nextRowIndex])
+		var lastTileFound *Tile
+		if nextColIndex == 0 {
+			lastRowIndex := nextRowIndex - 1
+			lastColIndex := len(arrangement[lastRowIndex]) - 1
+			lastTileFound = arrangement[lastRowIndex][lastColIndex]
+		} else {
+			lastTileFound = arrangement[nextRowIndex][nextColIndex-1]
+		}
+		// if the latest tile's right edge is unmatched, it is the end of the row
+		if nextColIndex > 0 && len(edgeMatches[lastTileFound.RightEdge()]) == 1 {
+			arrangement = append(arrangement, []*Tile{})
+			continue
+		}
+
+		var leftTile *Tile
+		var topTile *Tile
+		if nextColIndex > 0 {
+			leftTile = lastTileFound
+		}
+		if nextRowIndex > 0 {
+			topTile = arrangement[nextRowIndex-1][nextColIndex]
+		}
+		topMatches := []int{}
+		if topTile != nil {
+			for _, id := range edgeMatches[topTile.BottomEdge()] {
+				if _, ok := foundTiles[id]; !ok {
+					topMatches = append(topMatches, id)
+				}
+			}
+		}
+		leftMatches := []int{}
+		if leftTile != nil {
+			for _, id := range edgeMatches[leftTile.RightEdge()] {
+				if _, ok := foundTiles[id]; !ok {
+					leftMatches = append(leftMatches, id)
+				}
+			}
+		}
+		newTileOptions := []int{}
+		if len(topMatches) == 0 {
+			newTileOptions = leftMatches
+		} else if len(leftMatches) == 0 {
+			newTileOptions = topMatches
+		} else {
+			for _, id1 := range topMatches {
+				for _, id2 := range leftMatches {
+					if id1 == id2 {
+						newTileOptions = append(newTileOptions, id1)
+					}
+				}
+			}
+		}
+
+		var solutionTile *Tile
+		for _, id := range newTileOptions {
+			t := allTiles[id]
+			possibilities := []*Tile{t}
+			possibilities = append(possibilities, t.RotateClockwise())
+			possibilities = append(possibilities, t.RotateCounterclockwise())
+			possibilities = append(possibilities, t.Rotate180())
+			possibilities = append(possibilities, t.FlipVertical())
+			possibilities = append(possibilities, t.FlipVertical().RotateClockwise())
+			possibilities = append(possibilities, t.FlipVertical().RotateCounterclockwise())
+			possibilities = append(possibilities, t.FlipVertical().Rotate180())
+			for _, tilePossibility := range possibilities {
+				if topTile != nil && leftTile != nil {
+					if topTile.BottomEdge() == tilePossibility.TopEdge() && leftTile.RightEdge() == tilePossibility.LeftEdge() {
+						solutionTile = tilePossibility
+						break
+					}
+				} else if topTile != nil {
+					if topTile.BottomEdge() == tilePossibility.TopEdge() {
+						solutionTile = tilePossibility
+						break
+					}
+				} else {
+					if leftTile.RightEdge() == tilePossibility.LeftEdge() {
+						solutionTile = tilePossibility
+						break
+					}
+				}
+			}
+			if solutionTile != nil {
+				break
+			}
+		}
+		if solutionTile == nil {
+			panic("no solution tile")
+		}
+		foundTiles[solutionTile.id] = true
+		arrangement[nextRowIndex] = append(arrangement[nextRowIndex], solutionTile)
+	}
+	return arrangement
 }
