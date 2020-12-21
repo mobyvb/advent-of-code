@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -215,7 +216,82 @@ func part2(allTiles map[int]*Tile, corners []*Tile) {
 		output += "\n"
 	}
 	fmt.Println(output)
+	arrangement[0][0].Print()
+	picture := constructPicture(arrangement)
+	orientations := []*Tile{picture}
+	orientations = append(orientations, picture.RotateClockwise())
+	orientations = append(orientations, picture.RotateCounterclockwise())
+	orientations = append(orientations, picture.Rotate180())
+	orientations = append(orientations, picture.FlipVertical())
+	orientations = append(orientations, picture.FlipVertical().RotateClockwise())
+	orientations = append(orientations, picture.FlipVertical().RotateCounterclockwise())
+	orientations = append(orientations, picture.FlipVertical().Rotate180())
+	for _, t := range orientations {
+		n := countSeaMonsters(t)
+		fmt.Println(n)
 
+	}
+}
+
+func countSeaMonsters(picture *Tile) int {
+	// sea monster looks like
+	//                   #
+	// #    ##    ##    ###
+	//  #  #  #  #  #  #
+	seaMonster := []*regexp.Regexp{
+		regexp.MustCompile("..................#."),
+		regexp.MustCompile("#....##....##....###"),
+		regexp.MustCompile(".#..#..#..#..#..#..."),
+	}
+
+	count := 0
+	for i := 0; i+2 < len(picture.rows); i++ {
+		// search i for seamonster row 1, i+1 for seamonster row 2, and i+2 for seamonster row 3
+		rowMatches := [3][]int{}
+		for j, seaMonsterRow := range seaMonster {
+			rowMatches[j] = seaMonsterRow.FindStringIndex(picture.rows[i+j])
+		}
+		fmt.Println(i)
+		fmt.Println(rowMatches)
+		for _, j := range rowMatches[0] {
+			for _, k := range rowMatches[1] {
+				for _, l := range rowMatches[2] {
+					if j == k && j == l {
+						fmt.Println("match")
+						count++
+					}
+				}
+			}
+		}
+	}
+
+	return count
+}
+
+func constructPicture(arrangement [][]*Tile) *Tile {
+	// merge all tiles into single tile, ignoring outermost edges of each tile
+	picture := &Tile{}
+	for _, row := range arrangement {
+		nextRows := []string{}
+		for i, t := range row {
+			for j, tileRow := range t.rows {
+				// skip top and bottom rows
+				if j == 0 || j == len(t.rows)-1 {
+					continue
+				}
+				if i == 0 {
+					nextRows = append(nextRows, tileRow[1:len(tileRow)-1])
+				} else {
+					// j-1 because first row is removed, so index is offset
+					nextRows[j-1] += tileRow[1 : len(tileRow)-1]
+				}
+			}
+		}
+		for _, row := range nextRows {
+			picture.rows = append(picture.rows, row)
+		}
+	}
+	return picture
 }
 
 func constructArrangement(allTiles map[int]*Tile, corners []*Tile) [][]*Tile {
