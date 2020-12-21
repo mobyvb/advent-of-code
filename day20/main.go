@@ -208,15 +208,16 @@ func part1(allTiles map[int]*Tile) (corners []*Tile) {
 func part2(allTiles map[int]*Tile, corners []*Tile) {
 	arrangement := constructArrangement(allTiles, corners)
 
-	output := ""
-	for _, row := range arrangement {
-		for _, t := range row {
-			output += strconv.Itoa(t.id) + " "
+	/*
+		output := ""
+		for _, row := range arrangement {
+			for _, t := range row {
+				output += strconv.Itoa(t.id) + " "
+			}
+			output += "\n"
 		}
-		output += "\n"
-	}
-	fmt.Println(output)
-	arrangement[0][0].Print()
+		fmt.Println(output)
+	*/
 	picture := constructPicture(arrangement)
 	orientations := []*Tile{picture}
 	orientations = append(orientations, picture.RotateClockwise())
@@ -226,11 +227,23 @@ func part2(allTiles map[int]*Tile, corners []*Tile) {
 	orientations = append(orientations, picture.FlipVertical().RotateClockwise())
 	orientations = append(orientations, picture.FlipVertical().RotateCounterclockwise())
 	orientations = append(orientations, picture.FlipVertical().Rotate180())
+	numMonsters := 0
 	for _, t := range orientations {
-		n := countSeaMonsters(t)
-		fmt.Println(n)
-
+		numMonsters = countSeaMonsters(t)
+		if numMonsters > 0 {
+			break
+		}
 	}
+	totalHashes := 0
+	for _, r := range picture.rows {
+		for _, c := range r {
+			if c == '#' {
+				totalHashes++
+			}
+		}
+	}
+	answer := totalHashes - numMonsters*15
+	fmt.Println(answer)
 }
 
 func countSeaMonsters(picture *Tile) int {
@@ -243,26 +256,68 @@ func countSeaMonsters(picture *Tile) int {
 		regexp.MustCompile("#....##....##....###"),
 		regexp.MustCompile(".#..#..#..#..#..#..."),
 	}
+	monsterWidth := len("..................#.")
 
 	count := 0
+	// my commented out regex solution below isn't finding everything :/
+	// so this is my less fun solution which works
 	for i := 0; i+2 < len(picture.rows); i++ {
-		// search i for seamonster row 1, i+1 for seamonster row 2, and i+2 for seamonster row 3
-		rowMatches := [3][]int{}
-		for j, seaMonsterRow := range seaMonster {
-			rowMatches[j] = seaMonsterRow.FindStringIndex(picture.rows[i+j])
+		for j := 0; j < len(picture.rows[i]); j++ {
+			start := j
+			end := j + monsterWidth
+			if end >= len(picture.rows[i]) {
+				break
+			}
+			top := picture.rows[i][start:end]
+			middle := picture.rows[i+1][start:end]
+			bottom := picture.rows[i+2][start:end]
+			if seaMonster[0].MatchString(top) && seaMonster[1].MatchString(middle) && seaMonster[2].MatchString(bottom) {
+				count++
+			}
 		}
-		fmt.Println(i)
-		fmt.Println(rowMatches)
-		for _, j := range rowMatches[0] {
-			for _, k := range rowMatches[1] {
-				for _, l := range rowMatches[2] {
-					if j == k && j == l {
-						fmt.Println("match")
-						count++
+		// search i for seamonster row 1, i+1 for seamonster row 2, and i+2 for seamonster row 3
+		/*
+			allMatches := [3][]int{}
+			matchedRows := make(map[int][]int)
+			for j, r := range seaMonster {
+				rowToCheck := picture.rows[i+j]
+				currentOffset := 0
+				for {
+					nextMatch := r.FindStringIndex(rowToCheck)
+					if nextMatch == nil {
+						break
+					}
+					allMatches[j] = append(allMatches[j], nextMatch[0]+currentOffset)
+					if len(rowToCheck) > currentOffset {
+						rowToCheck = rowToCheck[nextMatch[0]+1:]
+						currentOffset += nextMatch[0] + 1
+					} else {
+						break
 					}
 				}
 			}
-		}
+
+			for _, j := range allMatches[0] {
+				for _, k := range allMatches[1] {
+					for _, l := range allMatches[2] {
+						//if j == k && j == l {
+						if j == k && j == l {
+							overlapping := false
+							for _, prevMatch := range matchedRows[i] {
+								if j-prevMatch < len("..................#.") {
+									overlapping = true
+								}
+							}
+							if !overlapping {
+								count++
+								matchedRows[i] = append(matchedRows[i], j)
+								//fmt.Printf("%d, %d\n", i, j)
+							}
+						}
+					}
+				}
+			}
+		*/
 	}
 
 	return count

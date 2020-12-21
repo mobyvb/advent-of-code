@@ -16,22 +16,21 @@ func main() {
 		"#.#.##.###.#.##.##.#####",
 		"..##.###.####..#.####.##",
 	}
-	allMatches := [3][]int{}
-	cutoff := 0
-	keepGoing := true
-	for keepGoing {
-		nextMatch := seaMonster[0].FindStringIndex(rows[0][cutoff:])
-		if len(nextMatch) == 0 {
-			keepGoing = false
-			break
-		}
-		allMatches[0] = append(allMatches[0], nextMatch[0])
-		cutoff = nextMatch[0]
-
-	}
 	fmt.Println(seaMonster[0].FindStringIndex(rows[0]))
-	fmt.Println(seaMonster[1].FindStringIndex(rows[1]))
-	fmt.Println(seaMonster[2].FindStringIndex(rows[2]))
-	fmt.Println(allMatches[0])
-
+	allMatches := [3][]int{}kj
+	for i, r := range seaMonster {
+		rowToCheck := rows[i]
+		currentOffset := 0
+		foundMatch := true
+		for foundMatch {
+			nextMatch := r.FindStringIndex(rowToCheck)
+			if nextMatch == nil {
+				break
+			}
+			allMatches[i] = append(allMatches[i], nextMatch[0]+currentOffset)
+			rowToCheck = rowToCheck[currentOffset+1:]
+			currentOffset += nextMatch[0] + 1
+		}
+	}
+	fmt.Println(allMatches)
 }
