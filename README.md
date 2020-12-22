@@ -21,3 +21,4 @@ https://adventofcode.com/2020
 * Day 19: Monster Messages
 * Day 20: Jurassic Jigsaw
 * Day 21: Allergen Assessment
+* Day 22: Crab Combat
