@@ -1,0 +1,2 @@
+example input: "389125467"
+my input: "389547612"
