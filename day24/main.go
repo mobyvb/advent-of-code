@@ -90,8 +90,8 @@ func main() {
 		}
 	}
 
-	part1(tileList)
-	part2()
+	m := part1(tileList)
+	part2(m)
 }
 
 /*
@@ -227,11 +227,36 @@ func (c Coord) Move(d Direction) Coord {
 type Map struct {
 	// coord: isBlack
 	tiles map[Coord]bool
+	// lowest x, y (minus 1) in grid
+	minBound *Coord
+	// highest x, y (plus 1) in grid
+	maxBound *Coord
 }
 
 func NewMap() *Map {
 	return &Map{
-		tiles: make(map[Coord]bool),
+		tiles:    make(map[Coord]bool),
+		minBound: &Coord{x: -1, y: -1},
+		maxBound: &Coord{x: 1, y: 1},
+	}
+}
+
+func (m *Map) updateBounds(c Coord) {
+	minX := c.x - 1
+	minY := c.y - 1
+	maxX := c.x + 1
+	maxY := c.y + 1
+	if m.minBound.x > minX {
+		m.minBound.x = minX
+	}
+	if m.minBound.y > minY {
+		m.minBound.y = minY
+	}
+	if m.maxBound.x < maxX {
+		m.maxBound.x = maxX
+	}
+	if m.maxBound.y < maxY {
+		m.maxBound.y = maxY
 	}
 }
 
@@ -239,8 +264,24 @@ func (m *Map) FlipTile(l DirectionList) {
 	currentCoord := Coord{x: 0, y: 0}
 	for _, d := range l {
 		currentCoord = currentCoord.Move(d)
+		m.updateBounds(currentCoord)
 	}
 	m.tiles[currentCoord] = !m.tiles[currentCoord]
+}
+
+func (m *Map) AddTile(c Coord, isBlack bool) {
+	m.updateBounds(c)
+	m.tiles[c] = isBlack
+}
+
+func (m *Map) CountBlackAdjacent(c Coord) int {
+	blackAdjacent := 0
+	for _, d := range strToDirection {
+		if m.tiles[c.Move(d)] {
+			blackAdjacent++
+		}
+	}
+	return blackAdjacent
 }
 
 func (m *Map) CountBlackTiles() int {
@@ -253,18 +294,52 @@ func (m *Map) CountBlackTiles() int {
 	return count
 }
 
-func part1(directionList []DirectionList) {
+func (m *Map) FlipTilesForDay() *Map {
+	newMap := NewMap()
+	for x := m.minBound.x; x <= m.maxBound.x; x++ {
+		for y := m.minBound.y; y <= m.maxBound.y; y++ {
+			c := Coord{x: x, y: y}
+			isBlack := m.tiles[c]
+			numAdjacentBlack := m.CountBlackAdjacent(c)
+			// any black tile with zero or more than 2 black tiles immediately adjacent to it is flipped to white
+			if isBlack && (numAdjacentBlack == 0 || numAdjacentBlack > 2) {
+				// do nothing; tile in new map will be white by default
+				continue
+			}
+
+			// any white tile with exactly 2 black tiles immediately adjacent to it is flipped to black
+			if !isBlack && numAdjacentBlack == 2 {
+				newMap.AddTile(c, true)
+				continue
+			}
+
+			// if tile is black and previous conditions are not true, it stays black
+			if isBlack {
+				newMap.AddTile(c, true)
+			}
+		}
+	}
+	return newMap
+}
+
+func part1(directionList []DirectionList) *Map {
 	m := NewMap()
 	for _, l := range directionList {
 		m.FlipTile(l)
 	}
 	c := m.CountBlackTiles()
 	fmt.Println(c)
+	return m
 }
 
-func part2() {
+func part2(m *Map) {
+	for i := 1; i <= 100; i++ {
+		m = m.FlipTilesForDay()
+	}
+	fmt.Println(m.CountBlackTiles())
 }
 
+// output should match comment detailing grid movement
 func testCoordMovement() {
 	c0 := Coord{x: 0, y: 0}
 	c0.Print()
