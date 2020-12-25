@@ -1,0 +1,12 @@
+go run main.go <pubkey1> <pubkey2>
+
+example input:
+5764801
+17807724
+go run ./day25/main.go 5764801 17807724
+
+my input:
+18356117
+5909654
+go run ./day25/main.go 18356117 5909654
+
