@@ -43,3 +43,16 @@ func (f *File) GetInts() ([]int, error) {
 	}
 	return intList, nil
 }
+
+// GetBinary tries to parse each line as binary into an integer.
+func (f *File) GetBinary() ([]int, error) {
+	intList := make([]int, len(f.lines))
+	for i, l := range f.lines {
+		value, err := strconv.ParseInt(l, 2, 32)
+		if err != nil {
+			return intList, err
+		}
+		intList[i] = int(value)
+	}
+	return intList, nil
+}
