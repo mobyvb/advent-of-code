@@ -11,7 +11,13 @@ type File struct {
 	lines []string
 }
 
-func OpenFile(path string) (*File, error) {
+type LineData []string
+
+type LineDatas []LineData
+
+type IntDatas []int
+
+func OpenFile(path string) (LineData, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -25,16 +31,101 @@ func OpenFile(path string) (*File, error) {
 	for fileScanner.Scan() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
-	return &File{
-		path:  path,
-		lines: fileTextLines,
-	}, nil
+
+	return fileTextLines, nil
 }
 
-// GetInts tries to convert each line in the file to an integer and return the list.
-func (f *File) GetInts() ([]int, error) {
-	intList := make([]int, len(f.lines))
-	for i, l := range f.lines {
+func (lds LineDatas) Each(f func(LineData)) {
+	for _, ld := range lds {
+		f(ld)
+	}
+}
+
+func (ld LineData) Split(splitStr string) LineDatas {
+	out := []LineData{}
+	cur := LineData{}
+	for _, l := range ld {
+		if l == splitStr {
+			out = append(out, cur)
+			cur = LineData{}
+			continue
+		}
+		cur = append(cur, l)
+	}
+	out = append(out, cur)
+	return out
+}
+
+func (lds LineDatas) MustSumInts() IntDatas {
+	out := IntDatas{}
+	for _, ld := range lds {
+		out = append(out, ld.MustSumInts())
+	}
+	return out
+}
+
+func (ids IntDatas) Max() int {
+	max := ids[0]
+	for i, x := range ids {
+		if i == 0 {
+			continue
+		}
+		if x > max {
+			max = x
+		}
+	}
+	return max
+}
+
+func (ids IntDatas) MaxN(n int) IntDatas {
+	maxes := make(IntDatas, n)
+	for i, x := range ids {
+		if i < n {
+			maxes[i] = x
+			continue
+		}
+
+		currentMinIndex := -1
+		currentMin := x
+		for j, y := range maxes {
+			if x > y && y < currentMin {
+				currentMin = y
+				currentMinIndex = j
+			}
+		}
+		if currentMinIndex >= 0 {
+			maxes[currentMinIndex] = x
+		}
+	}
+
+	return maxes
+}
+
+func (ids IntDatas) Sum() int {
+	sum := 0
+	for _, x := range ids {
+		sum += x
+	}
+
+	return sum
+}
+
+func (ld LineData) MustSumInts() int {
+	sum := 0
+	for _, l := range ld {
+		value, err := strconv.Atoi(l)
+		if err != nil {
+			panic(err)
+		}
+		sum += value
+	}
+	return sum
+}
+
+// GetInts tries to convert each line in the LineData to an integer and return the list.
+func (ld LineData) GetInts() ([]int, error) {
+	intList := make([]int, len(ld))
+	for i, l := range ld {
 		value, err := strconv.Atoi(l)
 		if err != nil {
 			return intList, err
@@ -45,9 +136,9 @@ func (f *File) GetInts() ([]int, error) {
 }
 
 // GetBinary tries to parse each line as binary into an integer.
-func (f *File) GetBinary() ([]int, error) {
-	intList := make([]int, len(f.lines))
-	for i, l := range f.lines {
+func (ld LineData) GetBinary() ([]int, error) {
+	intList := make([]int, len(ld))
+	for i, l := range ld {
 		value, err := strconv.ParseInt(l, 2, 32)
 		if err != nil {
 			return intList, err
