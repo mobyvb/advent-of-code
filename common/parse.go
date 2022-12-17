@@ -69,6 +69,34 @@ func (ld LineData) SplitEachF(f func(string) LineData) LineDatas {
 	return out
 }
 
+// SplitN will divide each line by number of characters
+func (ld LineData) SplitN(n int) LineDatas {
+	out := []LineData{}
+	for _, l := range ld {
+		next := []string{}
+		lastSplit := 0
+		for i := n; i <= len(l); i += n {
+			start := i - n
+			next = append(next, l[start:i])
+			lastSplit = i
+		}
+		if lastSplit < len(l)-1 {
+			next = append(next, l[lastSplit+1:len(l)])
+		}
+		out = append(out, next)
+	}
+	return out
+}
+
+func (ld LineData) ReplaceStrings(r *strings.Replacer) LineData {
+	for i, l := range ld {
+		l2 := r.Replace(l)
+		ld[i] = l2
+	}
+	return ld
+
+}
+
 func (ld LineData) DivideOnStr(splitStr string) LineDatas {
 	out := []LineData{}
 	cur := LineData{}
@@ -112,12 +140,42 @@ func (ld LineData) MustSumInts() int {
 }
 
 // --- LineDatas functions ---
+
+// DropLastF removes the last row, but passes it into a callback
+func (lds LineDatas) DropLastF(f func(LineData)) LineDatas {
+	f(lds[len(lds)-1])
+	return lds[:len(lds)-1]
+}
+
 func (lds LineDatas) MustSumInts() IntDatas {
 	out := IntDatas{}
 	for _, ld := range lds {
 		out = append(out, ld.MustSumInts())
 	}
 	return out
+}
+
+func (lds LineDatas) EachF(f func(LineData)) LineDatas {
+	for _, ld := range lds {
+		f(ld)
+	}
+	return lds
+}
+
+func (lds LineDatas) ReverseEachF(f func(LineData)) LineDatas {
+	for i := len(lds) - 1; i >= 0; i-- {
+		f(lds[i])
+	}
+
+	return lds
+}
+
+func (lds LineDatas) ReplaceEachF(f func(LineData) LineData) LineDatas {
+	for i, ld := range lds {
+		newLd := f(ld)
+		lds[i] = newLd
+	}
+	return lds
 }
 
 func (lds LineDatas) SumEachF(f func(LineData) int) int {
