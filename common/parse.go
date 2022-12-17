@@ -52,6 +52,13 @@ func SplitInts(s, splitOn string) []int {
 
 // --- LineData functions ---
 
+func (ld LineData) EachF(f func(string)) LineData {
+	for _, l := range ld {
+		f(l)
+	}
+	return ld
+}
+
 func (ld LineData) SplitEach(splitStr string) LineDatas {
 	out := make(LineDatas, len(ld))
 	for i, l := range ld {
