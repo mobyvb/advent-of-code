@@ -13,8 +13,8 @@ func main() {
 		panic(err)
 	}
 	// part 1
-	fmt.Println(ld.Split("").MustSumInts().Max())
+	fmt.Println(ld.DivideOnStr("").MustSumInts().Max())
 	// part 2
-	fmt.Println(ld.Split("").MustSumInts().MaxN(3).Sum())
+	fmt.Println(ld.DivideOnStr("").MustSumInts().MaxN(3).Sum())
 
 }

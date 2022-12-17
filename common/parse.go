@@ -51,7 +51,7 @@ func (ld LineData) SplitEachF(f func(string) LineData) LineDatas {
 	return out
 }
 
-func (ld LineData) Split(splitStr string) LineDatas {
+func (ld LineData) DivideOnStr(splitStr string) LineDatas {
 	out := []LineData{}
 	cur := LineData{}
 	for _, l := range ld {
@@ -60,6 +60,21 @@ func (ld LineData) Split(splitStr string) LineDatas {
 			cur = LineData{}
 			continue
 		}
+		cur = append(cur, l)
+	}
+	out = append(out, cur)
+	return out
+}
+
+func (ld LineData) DivideN(n int) LineDatas {
+	out := []LineData{}
+	cur := LineData{}
+	for i, l := range ld {
+		if i != 0 && i%n == 0 {
+			out = append(out, cur)
+			cur = LineData{}
+		}
+
 		cur = append(cur, l)
 	}
 	out = append(out, cur)
