@@ -38,11 +38,20 @@ func main() {
 
 	})
 
-	rope := NewRope(0, 0)
+	// part 1
+	rope := NewRope(common.NewCoord(0, 0), 2)
 	for _, ins := range instructions {
 		rope.Move(ins)
 	}
-	tailVisits := len(rope.Tail.visited)
+	tailVisits := len(rope.Knots[1].visited)
+	fmt.Println(tailVisits)
+
+	// part 2
+	rope = NewRope(common.NewCoord(0, 0), 10)
+	for _, ins := range instructions {
+		rope.Move(ins)
+	}
+	tailVisits = len(rope.Knots[9].visited)
 	fmt.Println(tailVisits)
 
 }
@@ -57,9 +66,9 @@ type Knot struct {
 	visited  map[common.Coord]bool
 }
 
-func NewKnot(x, y int) *Knot {
+func NewKnot(c common.Coord) *Knot {
 	k := &Knot{
-		position: common.NewCoord(x, y),
+		position: c,
 		visited:  make(map[common.Coord]bool),
 	}
 	k.visited[k.position] = true
@@ -90,13 +99,16 @@ func (k *Knot) Follow(k2 *Knot) {
 }
 
 type Rope struct {
-	Head, Tail *Knot
+	Knots []*Knot
 }
 
-func NewRope(x, y int) *Rope {
+func NewRope(c common.Coord, knotCount int) *Rope {
+	knots := make([]*Knot, knotCount)
+	for i := 0; i < knotCount; i++ {
+		knots[i] = NewKnot(c)
+	}
 	return &Rope{
-		Head: NewKnot(x, y),
-		Tail: NewKnot(x, y),
+		Knots: knots,
 	}
 }
 
@@ -108,6 +120,9 @@ func (r *Rope) Move(ins Instruction) {
 }
 
 func (r *Rope) Step(d common.Direction) {
-	r.Head.Move(d)
-	r.Tail.Follow(r.Head)
+	head := r.Knots[0]
+	head.Move(d)
+	for i := 1; i < len(r.Knots); i++ {
+		r.Knots[i].Follow(r.Knots[i-1])
+	}
 }
