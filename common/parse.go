@@ -12,7 +12,6 @@ type File struct {
 	lines []string
 }
 
-type Line string
 type LineData []string
 type LineDatas []LineData
 type IntDatas []int
@@ -35,19 +34,19 @@ func OpenFile(path string) (LineData, error) {
 	return fileTextLines, nil
 }
 
-func (lds LineDatas) SumEachF(f func(LineData) int) int {
-	total := 0
-	for _, ld := range lds {
-		total += f(ld)
-	}
-	return total
-}
-
 func (ld LineData) SplitEach(splitStr string) LineDatas {
 	out := make(LineDatas, len(ld))
 	for i, l := range ld {
 		splitL := strings.Split(l, splitStr)
 		out[i] = splitL
+	}
+	return out
+}
+
+func (ld LineData) SplitEachF(f func(string) LineData) LineDatas {
+	out := make(LineDatas, len(ld))
+	for i, l := range ld {
+		out[i] = f(l)
 	}
 	return out
 }
@@ -73,6 +72,14 @@ func (lds LineDatas) MustSumInts() IntDatas {
 		out = append(out, ld.MustSumInts())
 	}
 	return out
+}
+
+func (lds LineDatas) SumEachF(f func(LineData) int) int {
+	total := 0
+	for _, ld := range lds {
+		total += f(ld)
+	}
+	return total
 }
 
 func (ids IntDatas) Max() int {
@@ -133,11 +140,7 @@ func (ld LineData) MustSumInts() int {
 	return sum
 }
 
-/*
-func (l Line) Split(s splitStr) LineData {
-	return l.Split(s)
-}
-*/
+// these are old
 
 // GetInts tries to convert each line in the LineData to an integer and return the list.
 func (ld LineData) GetInts() ([]int, error) {
