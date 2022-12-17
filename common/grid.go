@@ -7,7 +7,6 @@ type Grid[T GridItem] struct {
 }
 
 type GridItem interface {
-	Value() int
 	String() string
 	PrintWidth() int
 }
@@ -95,7 +94,9 @@ func (g *Grid[T]) String() string {
 	for y, row := range g.values {
 		out += fmt.Sprintf(" %d |", y)
 		for _, item := range row {
-			out += fmt.Sprintf(" %s ", (*item).String())
+			if item != nil {
+				out += fmt.Sprintf(" %s ", (*item).String())
+			}
 		}
 		out += "\n"
 	}

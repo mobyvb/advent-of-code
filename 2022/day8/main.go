@@ -108,10 +108,6 @@ type Tree struct {
 	left, right, top, bottom *Tree
 }
 
-func (t Tree) Value() int {
-	return t.height
-}
-
 func (t Tree) String() string {
 	/*
 		visible := "f"

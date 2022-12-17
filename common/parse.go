@@ -34,6 +34,24 @@ func OpenFile(path string) (LineData, error) {
 	return fileTextLines, nil
 }
 
+func MustOpenFile(path string) LineData {
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanLines)
+	var fileTextLines []string
+
+	for fileScanner.Scan() {
+		fileTextLines = append(fileTextLines, fileScanner.Text())
+	}
+
+	return fileTextLines
+}
+
 // --- primitive functions ---
 
 func SplitInts(s, splitOn string) []int {
