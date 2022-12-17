@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type File struct {
@@ -11,10 +12,9 @@ type File struct {
 	lines []string
 }
 
+type Line string
 type LineData []string
-
 type LineDatas []LineData
-
 type IntDatas []int
 
 func OpenFile(path string) (LineData, error) {
@@ -35,10 +35,21 @@ func OpenFile(path string) (LineData, error) {
 	return fileTextLines, nil
 }
 
-func (lds LineDatas) Each(f func(LineData)) {
+func (lds LineDatas) SumEachF(f func(LineData) int) int {
+	total := 0
 	for _, ld := range lds {
-		f(ld)
+		total += f(ld)
 	}
+	return total
+}
+
+func (ld LineData) SplitEach(splitStr string) LineDatas {
+	out := make(LineDatas, len(ld))
+	for i, l := range ld {
+		splitL := strings.Split(l, splitStr)
+		out[i] = splitL
+	}
+	return out
 }
 
 func (ld LineData) Split(splitStr string) LineDatas {
@@ -121,6 +132,12 @@ func (ld LineData) MustSumInts() int {
 	}
 	return sum
 }
+
+/*
+func (l Line) Split(s splitStr) LineData {
+	return l.Split(s)
+}
+*/
 
 // GetInts tries to convert each line in the LineData to an integer and return the list.
 func (ld LineData) GetInts() ([]int, error) {
