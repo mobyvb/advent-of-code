@@ -35,6 +35,21 @@ func (g *Grid[T]) Insert(x, y int, item *T) {
 	g.values[y][x] = item
 }
 
+func (g *Grid[T]) Get(x, y int) *T {
+	if x < 0 || x >= g.Width() || y < 0 || y >= g.Height() {
+		return nil
+	}
+	return g.values[y][x]
+}
+
+func (g *Grid[T]) TraverseAll(f func(x, y int, item *T)) {
+	for y, row := range g.values {
+		for x, item := range row {
+			f(x, y, item)
+		}
+	}
+}
+
 func (g *Grid[T]) TraverseRow(y int, f func(item *T)) {
 	row := g.values[y]
 	for _, item := range row {
