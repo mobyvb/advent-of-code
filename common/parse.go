@@ -34,6 +34,24 @@ func OpenFile(path string) (LineData, error) {
 	return fileTextLines, nil
 }
 
+// --- primitive functions ---
+
+func SplitInts(s, splitOn string) []int {
+	splitStr := strings.Split(s, splitOn)
+	out := make([]int, len(splitStr))
+
+	for i, s := range splitStr {
+		value, err := strconv.Atoi(s)
+		if err != nil {
+			panic(err)
+		}
+		out[i] = value
+	}
+	return out
+}
+
+// --- LineData functions ---
+
 func (ld LineData) SplitEach(splitStr string) LineDatas {
 	out := make(LineDatas, len(ld))
 	for i, l := range ld {
@@ -81,6 +99,19 @@ func (ld LineData) DivideN(n int) LineDatas {
 	return out
 }
 
+func (ld LineData) MustSumInts() int {
+	sum := 0
+	for _, l := range ld {
+		value, err := strconv.Atoi(l)
+		if err != nil {
+			panic(err)
+		}
+		sum += value
+	}
+	return sum
+}
+
+// --- LineDatas functions ---
 func (lds LineDatas) MustSumInts() IntDatas {
 	out := IntDatas{}
 	for _, ld := range lds {
@@ -97,6 +128,16 @@ func (lds LineDatas) SumEachF(f func(LineData) int) int {
 	return total
 }
 
+func (lds LineDatas) CountIf(f func(LineData) bool) int {
+	count := 0
+	for _, ld := range lds {
+		if f(ld) {
+			count++
+		}
+	}
+	return count
+}
+
 func (ids IntDatas) Max() int {
 	max := ids[0]
 	for i, x := range ids {
@@ -109,6 +150,8 @@ func (ids IntDatas) Max() int {
 	}
 	return max
 }
+
+// --- IntDatas functions ---
 
 func (ids IntDatas) MaxN(n int) IntDatas {
 	maxes := make(IntDatas, n)
@@ -143,19 +186,7 @@ func (ids IntDatas) Sum() int {
 	return sum
 }
 
-func (ld LineData) MustSumInts() int {
-	sum := 0
-	for _, l := range ld {
-		value, err := strconv.Atoi(l)
-		if err != nil {
-			panic(err)
-		}
-		sum += value
-	}
-	return sum
-}
-
-// these are old
+// --- old functions (pre AoC 2022) ---
 
 // GetInts tries to convert each line in the LineData to an integer and return the list.
 func (ld LineData) GetInts() ([]int, error) {
