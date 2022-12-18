@@ -48,6 +48,15 @@ func main() {
 	fmt.Println("min distance:")
 	fmt.Println(startingPos.distanceFromTarget)
 	//fmt.Println(grid)
+	// part 2
+	minFromA := startingPos.distanceFromTarget
+	grid.TraverseAll(func(x, y int, pos *Position) {
+		if pos.value == 'a' && pos.distanceFromTarget >= 0 && pos.distanceFromTarget < minFromA {
+			minFromA = pos.distanceFromTarget
+		}
+	})
+	fmt.Println("min distance from any position 'a':")
+	fmt.Println(minFromA)
 }
 
 type Position struct {
