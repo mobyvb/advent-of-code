@@ -55,7 +55,8 @@ func main() {
 
 	for round := 0; round < 20; round++ {
 		for _, m := range monkeys {
-			m.DoRound(3)
+			// second arg irrelevant for part 1
+			m.DoRound(1, 0)
 		}
 	}
 
@@ -70,16 +71,16 @@ func main() {
 	fmt.Println(monkeyBusiness)
 
 	// part 2 is the same except for 10000 rounds, and you don't divide "worry level" by 3 each round
-	for round := 0; round < 1000; round++ {
+	divisibleChecks := []int{}
+	for _, m := range monkeysPart2 {
+		divisibleChecks = append(divisibleChecks, m.divisibleCheck)
+	}
+	cm := commonMultiple(divisibleChecks)
+	for round := 0; round < 10000; round++ {
 		for _, m := range monkeysPart2 {
-			m.DoRound(1)
+			m.DoRound(2, cm)
 		}
 	}
-	fmt.Println("after 10000 rounds")
-	fmt.Println(monkeysPart2[0])
-	fmt.Println(monkeysPart2[1])
-	fmt.Println(monkeysPart2[2])
-	fmt.Println(monkeysPart2[3])
 	itemsInspectedList = make([]int, len(monkeysPart2))
 	for i, m := range monkeysPart2 {
 		itemsInspectedList[i] = m.itemsInspected
@@ -88,6 +89,17 @@ func main() {
 	monkeyBusiness = max2[0] * max2[1]
 
 	fmt.Println(monkeyBusiness)
+}
+
+// I stole this from someone else's solution - I didn't understand the part about "keeping your worry level managable"
+// https://github.com/nazarpysko/AoC/blob/e67ea1eadb81e42b59b73e723788f9d7d536fa5d/2022/day11/common.go#L109
+// it's for part 2
+func commonMultiple(items []int) int {
+	cm := 1
+	for _, i := range items {
+		cm *= i
+	}
+	return cm
 }
 
 func getOperationFunc(s string) func(int64) int64 {
@@ -146,12 +158,16 @@ func NewMonkey() *Monkey {
 	}
 }
 
-func (m *Monkey) DoRound(worryDivisor int) {
+func (m *Monkey) DoRound(part, commonMultiple int) {
 	for !m.items.IsEmpty() {
 		nextItem := m.items.Dequeue()
 		m.itemsInspected++
 		nextItem.worryLevel = m.operationFunc(nextItem.worryLevel)
-		nextItem.worryLevel /= int64(worryDivisor)
+		if part == 1 {
+			nextItem.worryLevel /= 3
+		} else {
+			nextItem.worryLevel %= int64(commonMultiple)
+		}
 		if nextItem.worryLevel%int64(m.divisibleCheck) == 0 {
 			m.trueMonkey.items.Enqueue(nextItem)
 		} else {
