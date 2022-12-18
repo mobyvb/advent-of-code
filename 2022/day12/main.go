@@ -12,6 +12,7 @@ func main() {
 	rows := len(ld)
 	cols := len(ld[0])
 	grid := common.NewGrid[Position](cols, rows)
+	var startingPos *Position
 
 	y := 0
 	ld.EachF(func(row string) {
@@ -20,6 +21,10 @@ func main() {
 			pos := NewPosition(c, coords, false)
 			if c == 'E' {
 				pos = NewPosition('z', coords, true)
+			}
+			if c == 'S' {
+				pos = NewPosition('a', coords, false)
+				startingPos = pos
 			}
 			grid.Insert(x, y, pos)
 		}
@@ -34,14 +39,14 @@ func main() {
 		pos.CheckAddVisitable(grid.Get(x, y+1))
 	})
 
-	for grid.Get(0, 0).distanceFromTarget < 0 {
+	for startingPos.distanceFromTarget < 0 {
 		grid.TraverseAll(func(x, y int, pos *Position) {
 			pos.UpdateDistanceFromTarget()
 		})
 	}
 	//fmt.Println(grid.StringBounds(5, 5))
 	fmt.Println("min distance:")
-	fmt.Println(grid.Get(0, 0).distanceFromTarget)
+	fmt.Println(startingPos.distanceFromTarget)
 	//fmt.Println(grid)
 }
 
