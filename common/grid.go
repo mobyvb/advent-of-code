@@ -102,3 +102,34 @@ func (g *Grid[T]) String() string {
 	}
 	return out
 }
+
+func (g *Grid[T]) StringBounds(x, y int) string {
+	printWidth := (*g.values[0][0]).PrintWidth()
+	out := ""
+	// header
+	headerRow := "   "
+	subheaderRow := "    "
+	for i := 0; i < x; i++ {
+		for a := 0; a < printWidth; a++ {
+			headerRow += " "
+			subheaderRow += "-"
+		}
+		headerRow += fmt.Sprintf(" %d", i)
+		subheaderRow += "--"
+	}
+	out += headerRow + "\n" + subheaderRow + "\n"
+	for y2 := 0; y2 < y; y2++ {
+		row := g.values[y2]
+		out += fmt.Sprintf(" %d |", y2)
+		for x2, item := range row {
+			if x2 > x {
+				break
+			}
+			if item != nil {
+				out += fmt.Sprintf(" %s ", (*item).String())
+			}
+		}
+		out += "\n"
+	}
+	return out
+}
