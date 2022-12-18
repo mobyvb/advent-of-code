@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -11,12 +12,14 @@ import (
 
 func main() {
 	packetPairs := [][]*Packet{}
+	allPackets := []*Packet{} // for part 2
 	common.MustOpenFile(os.Args[1]).DivideOnStr("").EachF(func(ld common.LineData) {
 		packetPair := []*Packet{
 			NewPacket(ld[0]),
 			NewPacket(ld[1]),
 		}
 		packetPairs = append(packetPairs, packetPair)
+		allPackets = append(allPackets, packetPair[0], packetPair[1])
 	})
 	indexSum := 0
 	for i, pp := range packetPairs {
@@ -28,6 +31,26 @@ func main() {
 		}
 	}
 	fmt.Println(indexSum)
+
+	// part 2
+	dividerPacket1 := NewPacket("[[2]]")
+	dividerPacket2 := NewPacket("[[6]]")
+	allPackets = append(allPackets, dividerPacket1, dividerPacket2)
+	// less func returns true if allPackets[i] < allPackets[j]
+	sort.SliceStable(allPackets, func(i, j int) bool {
+		return allPackets[i].Compare(allPackets[j]) < 0
+	})
+	dp1Index := 0
+	dp2Index := 0
+	for i, p := range allPackets {
+		if p == dividerPacket1 {
+			dp1Index = i + 1
+		}
+		if p == dividerPacket2 {
+			dp2Index = i + 1
+		}
+	}
+	fmt.Println(dp1Index * dp2Index)
 }
 
 // either value or subPackets will exist, but not both
