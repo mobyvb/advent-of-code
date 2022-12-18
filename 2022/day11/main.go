@@ -35,8 +35,8 @@ func main() {
 
 		startingItems := common.ParseCommaSeparatedInts(ld[1])
 		for _, v := range startingItems {
-			monkey.items.Enqueue(Item{worryLevel: v})
-			monkeyPart2.items.Enqueue(Item{worryLevel: v})
+			monkey.items.Enqueue(Item{worryLevel: int64(v)})
+			monkeyPart2.items.Enqueue(Item{worryLevel: int64(v)})
 		}
 
 		monkey.operationFunc = getOperationFunc(ld[2])
@@ -69,64 +69,62 @@ func main() {
 
 	fmt.Println(monkeyBusiness)
 
-	/*
-		// part 2 is the same except for 10000 rounds, and you don't divide "worry level" by 3 each round
-		for round := 0; round < 1000; round++ {
-			for _, m := range monkeysPart2 {
-				m.DoRound(1)
-			}
+	// part 2 is the same except for 10000 rounds, and you don't divide "worry level" by 3 each round
+	for round := 0; round < 1000; round++ {
+		for _, m := range monkeysPart2 {
+			m.DoRound(1)
 		}
-		fmt.Println("after 10000 rounds")
-		fmt.Println(monkeysPart2[0])
-		fmt.Println(monkeysPart2[1])
-		fmt.Println(monkeysPart2[2])
-		fmt.Println(monkeysPart2[3])
-		itemsInspectedList = make([]int, len(monkeysPart2))
-		for i, m := range monkeysPart2 {
-			itemsInspectedList[i] = m.itemsInspected
-		}
-		max2 = common.MaxN(itemsInspectedList, 2)
-		monkeyBusiness = max2[0] * max2[1]
+	}
+	fmt.Println("after 10000 rounds")
+	fmt.Println(monkeysPart2[0])
+	fmt.Println(monkeysPart2[1])
+	fmt.Println(monkeysPart2[2])
+	fmt.Println(monkeysPart2[3])
+	itemsInspectedList = make([]int, len(monkeysPart2))
+	for i, m := range monkeysPart2 {
+		itemsInspectedList[i] = m.itemsInspected
+	}
+	max2 = common.MaxN(itemsInspectedList, 2)
+	monkeyBusiness = max2[0] * max2[1]
 
-		fmt.Println(monkeyBusiness)
-	*/
+	fmt.Println(monkeyBusiness)
 }
 
-func getOperationFunc(s string) func(int) int {
+func getOperationFunc(s string) func(int64) int64 {
 	var splitStr []string
-	var funcToUse func(a, b int) int
+	var funcToUse func(a, b int64) int64
 
 	if strings.Contains(s, "/") {
 		splitStr = strings.Split(s, "/")
-		funcToUse = common.Div
+		funcToUse = common.Div[int64]
 	} else if strings.Contains(s, "+") {
 		splitStr = strings.Split(s, "+")
-		funcToUse = common.Add
+		funcToUse = common.Add[int64]
 	} else if strings.Contains(s, "-") {
 		splitStr = strings.Split(s, "-")
-		funcToUse = common.Sub
+		funcToUse = common.Sub[int64]
 	} else {
 		splitStr = strings.Split(s, "*")
-		funcToUse = common.Mul
+		funcToUse = common.Mul[int64]
 	}
 	arg1 := strings.TrimSpace(splitStr[0])
 	arg2 := strings.TrimSpace(splitStr[1])
 
-	return func(x int) int {
+	return func(x int64) int64 {
 		if arg1 == "old" && arg2 == "old" {
 			return funcToUse(x, x)
 		}
 		if arg1 == "old" {
-			y := common.ParseInt(arg2)
+			y := int64(common.ParseInt(arg2))
 			return funcToUse(x, y)
 		}
-		y := common.ParseInt(arg1)
+		y := int64(common.ParseInt(arg1))
 		return funcToUse(y, x)
 	}
 }
 
 type Item struct {
-	worryLevel int
+	worryLevel int64
 }
 
 func (i Item) String() string {
@@ -137,7 +135,7 @@ type Monkey struct {
 	items          *common.Queue[Item]
 	divisibleCheck int
 	itemsInspected int
-	operationFunc  func(int) int
+	operationFunc  func(int64) int64
 	trueMonkey     *Monkey
 	falseMonkey    *Monkey
 }
@@ -153,8 +151,8 @@ func (m *Monkey) DoRound(worryDivisor int) {
 		nextItem := m.items.Dequeue()
 		m.itemsInspected++
 		nextItem.worryLevel = m.operationFunc(nextItem.worryLevel)
-		nextItem.worryLevel /= worryDivisor
-		if nextItem.worryLevel%m.divisibleCheck == 0 {
+		nextItem.worryLevel /= int64(worryDivisor)
+		if nextItem.worryLevel%int64(m.divisibleCheck) == 0 {
 			m.trueMonkey.items.Enqueue(nextItem)
 		} else {
 			m.falseMonkey.items.Enqueue(nextItem)

@@ -1,18 +1,22 @@
 package common
 
-func Add(a, b int) int {
+import (
+	"golang.org/x/exp/constraints"
+)
+
+func Add[T constraints.Integer](a, b T) T {
 	return a + b
 }
 
-func Sub(a, b int) int {
+func Sub[T constraints.Integer](a, b T) T {
 	return a - b
 }
 
-func Mul(a, b int) int {
+func Mul[T constraints.Integer](a, b T) T {
 	return a * b
 }
 
-func Div(a, b int) int {
+func Div[T constraints.Integer](a, b T) T {
 	return a / b
 }
 
