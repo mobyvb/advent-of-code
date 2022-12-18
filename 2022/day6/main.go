@@ -29,7 +29,7 @@ func main() {
 // part1 should return the number of characters read by the time the first four consecutive, unique characters are read
 func part1(s string) int {
 	// this queue will be limited to a capacity of 4 items
-	q := common.NewQueue()
+	q := common.NewQueue[string]()
 
 	cursor := 4
 	q.EnqueueMultiple(strings.Split(s[:cursor], ""))
@@ -47,7 +47,7 @@ func part1(s string) int {
 // part2 should return the number of characters read by the time the first fourteen consecutive, unique characters are read
 func part2(s string) int {
 	// this queue will be limited to a capacity of 14 items
-	q := common.NewQueue()
+	q := common.NewQueue[string]()
 
 	cursor := 14
 	q.EnqueueMultiple(strings.Split(s[:cursor], ""))

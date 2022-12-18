@@ -68,6 +68,24 @@ func SplitInts(s, splitOn string) []int {
 	return out
 }
 
+func ParseInt(s string) int {
+	s = strings.TrimSpace(s)
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+func ParseCommaSeparatedInts(s string) []int {
+	splitStr := strings.Split(s, ",")
+	out := []int{}
+	for _, s := range splitStr {
+		out = append(out, ParseInt(s))
+	}
+	return out
+}
+
 // --- LineData functions ---
 
 func (ld LineData) EachF(f func(string)) LineData {

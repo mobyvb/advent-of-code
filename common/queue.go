@@ -1,35 +1,37 @@
 package common
 
-type Queue struct {
-	items []string
+import "fmt"
+
+type Queue[T comparable] struct {
+	items []T
 }
 
-func NewQueue() *Queue {
-	return &Queue{items: []string{}}
+func NewQueue[T comparable]() *Queue[T] {
+	return &Queue[T]{}
 }
 
-func (q *Queue) Enqueue(s string) {
+func (q *Queue[T]) Enqueue(s T) {
 	q.items = append(q.items, s)
 }
 
-func (q *Queue) EnqueueMultiple(s []string) {
+func (q *Queue[T]) EnqueueMultiple(s []T) {
 	q.items = append(q.items, s...)
 }
 
-func (q *Queue) Dequeue() string {
+func (q *Queue[T]) Dequeue() T {
 	removed := q.items[0]
 	q.items = q.items[1:]
 	return removed
 }
 
-func (q *Queue) DequeueN(n int) []string {
+func (q *Queue[T]) DequeueN(n int) []T {
 	removed := q.items[:n]
 	q.items = q.items[n:]
 	return removed
 }
 
-func (q *Queue) IsUnique() bool {
-	counts := make(map[string]bool, len(q.items))
+func (q *Queue[T]) IsUnique() bool {
+	counts := make(map[T]bool, len(q.items))
 	for _, i := range q.items {
 		if counts[i] {
 			return false
@@ -39,10 +41,14 @@ func (q *Queue) IsUnique() bool {
 	return true
 }
 
-func (q *Queue) String() string {
+func (q *Queue[T]) IsEmpty() bool {
+	return len(q.items) == 0
+}
+
+func (q *Queue[T]) String() string {
 	out := "["
 	for i, item := range q.items {
-		out += item
+		out += fmt.Sprintf("%s", item)
 		if i < len(q.items)-1 {
 			out += ", "
 		}
