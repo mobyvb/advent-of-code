@@ -1,6 +1,9 @@
 package common
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Coord struct {
 	X, Y int
@@ -41,4 +44,8 @@ func (c Coord) Step(c2 Coord) Coord {
 	}
 
 	return c
+}
+
+func (c Coord) String() string {
+	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
 }
