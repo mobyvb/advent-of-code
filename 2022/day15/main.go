@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"mobyvb.com/advent/common"
@@ -27,21 +26,23 @@ func main() {
 		sensors = append(sensors, s)
 	})
 
-	//noBeaconRow := 10 // test input
-	noBeaconRow := 2000000 // my input
+	noBeaconRow := 10 // test input
+	// noBeaconRow := 2000000 // my input
 
 	fmt.Println("part 1")
 	rangedAtY := rangesAccessibleAtY(sensors, noBeaconRow, false, 0)
+	// lol this is off by one after I did part 2. I added +1 in TotalRanged to be inclusive of Begin and End
+	// I think I'm doing it right but whatever. I'm tired
 	fmt.Println(rangedAtY.TotalRanged())
 
 	fmt.Println("part 2")
-	//maxPos := common.NewCoord(20, 20) // test input
-	maxPos := common.NewCoord(4000000, 4000000) // my input
+	maxPos := common.NewCoord(20, 20) // test input
+	//maxPos := common.NewCoord(4000000, 4000000) // my input
 	for y := 0; y <= maxPos.Y; y++ {
 		rangedAtY := rangesAccessibleAtY(sensors, y, true, maxPos.X)
 		if (maxPos.X+1)-rangedAtY.TotalRanged() == 1 { // if this condition is true, there is exactly one available spot on this row
 			// the target x coordinate will be in the inverted range
-			targetX := rangedAtY.Invert()[0].begin
+			targetX := rangedAtY.Invert()[0].Begin
 			frequency := targetX*4000000 + y
 			fmt.Println("frequency")
 			fmt.Println(frequency)
@@ -51,16 +52,16 @@ func main() {
 	}
 }
 
-func rangesAccessibleAtY(sensors []*Cell, y int, part2 bool, part2Limit int) Ranges {
-	boundRange := Range{begin: 0, end: part2Limit}
-	accessibleRanges := Ranges{}
+func rangesAccessibleAtY(sensors []*Cell, y int, part2 bool, part2Limit int) common.Ranges {
+	boundRange := common.Range{Begin: 0, End: part2Limit}
+	accessibleRanges := common.Ranges{}
 	for _, s := range sensors {
 		s.CalcNoBeaconRange()
 		minPos, maxPos, accessible := s.pos.ManhattanRangeX(y, s.noBeaconRange)
 		if accessible {
 			begin := minPos.X
 			end := maxPos.X
-			newRange := Range{begin: begin, end: end}
+			newRange := common.Range{Begin: begin, End: end}
 			if part2 && newRange.Overlaps(boundRange) {
 				newRange = boundRange.Contain(newRange)
 			}
@@ -70,136 +71,6 @@ func rangesAccessibleAtY(sensors []*Cell, y int, part2 bool, part2Limit int) Ran
 
 	accessibleRanges = accessibleRanges.Simplify()
 	return accessibleRanges
-}
-
-type Range struct {
-	begin, end int
-}
-
-func (r Range) CompareTo(r2 Range) int {
-	return r.begin - r2.begin
-}
-
-func (r Range) Overlaps(r2 Range) bool {
-	if r.begin <= r2.end && r.begin >= r2.begin {
-		return true
-	}
-	if r.end <= r2.end && r.end >= r2.begin {
-		return true
-	}
-	if r2.begin <= r.end && r2.begin >= r.begin {
-		return true
-	}
-	if r2.end <= r.end && r2.end >= r.begin {
-		return true
-	}
-	return false
-}
-
-// Border returns whether r and r2 are touching one another.
-func (r Range) Borders(r2 Range) bool {
-	if r.end+1 == r2.begin || r2.end+1 == r.begin {
-		return true
-	}
-	return false
-}
-
-// Contain returns a modified r2 that is contained within r.
-// It assumes Overlaps() has been checked first.
-func (r Range) Contain(r2 Range) Range {
-	if r2.end >= r.begin && r2.end <= r.end && r2.begin >= r.begin && r2.begin <= r.end {
-		// already contained
-		return r2
-	}
-	if r2.end >= r.end {
-		r2.end = r.end
-	}
-	if r2.begin <= r.begin {
-		r2.begin = r.begin
-	}
-	return r2
-}
-
-func (r Range) Merge(r2 Range) Range {
-	begin := common.Min([]int{r.begin, r2.begin})
-	end := common.MaxN([]int{r.end, r2.end}, 1)[0]
-	return Range{begin: begin, end: end}
-}
-
-func (r Range) String() string {
-	return fmt.Sprintf("(%d)-(%d)", r.begin, r.end)
-}
-
-type Ranges []Range
-
-// Merge will sort the ranges, then merge them.
-func (rs Ranges) Simplify() Ranges {
-	sort.SliceStable(rs, func(i, j int) bool {
-		return rs[i].CompareTo(rs[j]) < 0
-	})
-
-	i := 0
-	newRanges := rs
-	for i < len(newRanges)-1 {
-		j := i + 1
-		left := newRanges[i]
-		right := newRanges[j]
-		if left.Overlaps(right) || left.Borders(right) {
-			combined := left.Merge(right)
-
-			newNewRanges := Ranges{} // lol im tired
-			for k, r := range newRanges {
-				if k == i {
-					continue
-				}
-				if k == j {
-					newNewRanges = append(newNewRanges, combined)
-					continue
-				}
-				newNewRanges = append(newNewRanges, r)
-			}
-			newRanges = newNewRanges
-			continue
-		}
-		i++
-	}
-	return newRanges
-}
-
-// TotalRanged assumes that Simplify has been called already
-func (rs Ranges) TotalRanged() int {
-	total := 0
-	for _, r := range rs {
-		total += (r.end - r.begin) + 1 // end and begin are inclusive
-	}
-
-	return total
-}
-
-// Invert returns ranges <not> contained within the provided range (not including outside the original ranges).
-// it assumes Simplify() has already been called
-func (rs Ranges) Invert() Ranges {
-	toReturn := Ranges{}
-	prevStart := rs[0].end + 1
-	for i := 1; i < len(rs); i++ {
-		r := rs[i]
-		end := r.begin - 1
-		toReturn = append(toReturn, Range{begin: prevStart, end: end})
-		prevStart = r.end + 1
-	}
-	return toReturn
-}
-
-func (rs Ranges) String() string {
-	out := "["
-	for i, r := range rs {
-		out += r.String()
-		if i < len(rs)-1 {
-			out += ", "
-		}
-	}
-	out += "]"
-	return out
 }
 
 // I didn't think through the problem before I made the below structs, but I'm too lazy to clean them up
