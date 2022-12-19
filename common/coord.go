@@ -46,6 +46,26 @@ func (c Coord) Step(c2 Coord) Coord {
 	return c
 }
 
+func (c Coord) ManhattanDistance(c2 Coord) int {
+	return int(math.Abs(float64(c2.Y-c.Y)) + math.Abs(float64(c2.X-c.X)))
+}
+
+// ManhattanRangeX provides the min and max coordinates accessible within `distance` using manhattan traversal,
+// given a fixed `y` at the destination.
+// if `y` is out of range, empty coordinates are returned, with `accessible=false`
+func (c Coord) ManhattanRangeX(y, distance int) (min, max Coord, accessible bool) {
+	distToY := c.ManhattanDistance(NewCoord(c.X, y))
+	if distToY > distance {
+		return min, max, false
+	}
+	min = NewCoord(c.X, y)
+	max = NewCoord(c.X, y)
+	xRange := distance - distToY
+	min.X -= xRange
+	max.X += xRange
+	return min, max, true
+}
+
 func (c Coord) String() string {
 	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
 }
