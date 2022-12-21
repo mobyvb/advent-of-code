@@ -10,12 +10,8 @@ import (
 	"mobyvb.com/advent/common"
 )
 
-// var allValves map[string]*Valve = map[string]*Valve{}
-
 var valveNames map[Valve]string
 var valveFromString map[string]Valve
-var valveMasks map[Valve]uint64 // each value is a bitmask with the bit for the relevant valve turned on
-var maskToValve map[uint64]Valve
 var flowRates map[Valve]int
 var allValves []Valve
 
@@ -24,8 +20,6 @@ func main() {
 	valveCount := len(ld)
 
 	valveNames = make(map[Valve]string, valveCount)
-	valveMasks = make(map[Valve]uint64, valveCount)
-	maskToValve = make(map[uint64]Valve, valveCount)
 	flowRates = make(map[Valve]int, valveCount)
 
 	valveNeighbors := make(map[Valve][]string, valveCount)
@@ -48,7 +42,6 @@ func main() {
 		valveFromString[valveName] = currentValve
 		flowRates[currentValve] = flowRate
 
-		valveMasks[currentValve] = currentValveMask
 		allValves = append(allValves, currentValve)
 
 		neighbors := strings.Split(ld[1], ", ")
@@ -147,7 +140,7 @@ func permuteValves(state ValveState, n byte) []ValveState {
 	for _, v := range allValves {
 		if state.Exists(v) {
 			if n == 1 {
-				toReturn = append(toReturn, ValveState(valveMasks[v]))
+				toReturn = append(toReturn, ValveState(v.Mask()))
 			} else {
 				nextLayerPermutations := permuteValves(state.Remove(v), n-1)
 				for _, next := range nextLayerPermutations {
@@ -189,6 +182,10 @@ func findMaxScore(pathState PathState, g *common.Graph[Valve]) int {
 
 type Valve byte
 
+func (v Valve) Mask() uint64 {
+	return 1 << v
+}
+
 func (v Valve) ID() byte {
 	return byte(v)
 }
@@ -200,19 +197,19 @@ func (v Valve) String() string {
 type ValveState uint64 // each bit represents the state of a particular valve
 
 func (vs ValveState) Exists(v Valve) bool {
-	mask := valveMasks[v]
+	mask := v.Mask()
 	return uint64(vs)&mask == mask
 }
 
 func (vs ValveState) Remove(v Valve) ValveState {
 	// invert `v` and AND with state
 	// e.g. 1111 & (!0010) = 1101
-	return ValveState(uint64(vs) & (^valveMasks[v]))
+	return ValveState(uint64(vs) & (^v.Mask()))
 }
 
 func (vs ValveState) Add(v Valve) ValveState {
 	// e.g. 1010 | 0100 = 1110
-	return ValveState(uint64(vs) | valveMasks[v])
+	return ValveState(uint64(vs) | v.Mask())
 }
 
 func (vs ValveState) Invert() ValveState {
