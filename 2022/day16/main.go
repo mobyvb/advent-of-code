@@ -87,27 +87,72 @@ func part1(g *common.Graph[Valve]) {
 	}
 	startingPathState := NewPathState(valveFromString["AA"], startingValveState, 30)
 
-	maxScore := findMaxScorePart1(startingPathState, g)
+	maxScore := findMaxScore(startingPathState, g)
 	fmt.Println("part 1 max score:")
 	fmt.Println(maxScore)
 }
 
 func part2(g *common.Graph[Valve]) {
 	startingValveState := ValveState(0)
+	zeroFlowValves := ValveState(0)
+	allValvesState := ValveState(0)
 	for _, v := range allValves {
+		allValvesState = allValvesState.Add(v)
 		if flowRates[v] > 0 {
 			startingValveState = startingValveState.Add(v)
+		} else {
+			zeroFlowValves = zeroFlowValves.Add(v)
 		}
 	}
-	startingPathState1 := NewPathState(valveFromString["AA"], startingValveState, 26)
-	startingPathState2 := startingPathState1
+	notValves := allValvesState.Invert()
 
-	maxScore := findMaxScorePart2(startingPathState1, startingPathState2, g)
+	myValveCount := startingValveState.Count() / byte(2)
+
+	pathOptionsMap := make(map[ValveState]struct{})
+	for i := byte(1); i <= myValveCount; i++ {
+		newPathOptions := permuteValves(startingValveState, i)
+		for _, p := range newPathOptions {
+			pathOptionsMap[p] = struct{}{}
+		}
+	}
+
+	maxScore := 0
+	for myPath := range pathOptionsMap {
+		myStartState := NewPathState(valveFromString["AA"], myPath, 26)
+		elephantPath := myPath.Invert().Exclude(zeroFlowValves).Exclude(notValves)
+		elephantStartState := NewPathState(valveFromString["AA"], elephantPath, 26)
+
+		myScore := findMaxScore(myStartState, g)
+		elephantScore := findMaxScore(elephantStartState, g)
+		if myScore+elephantScore > maxScore {
+			maxScore = myScore + elephantScore
+		}
+
+	}
+
 	fmt.Println("part 2 max score:")
 	fmt.Println(maxScore)
 }
 
-func findMaxScorePart1(pathState PathState, g *common.Graph[Valve]) int {
+func permuteValves(state ValveState, n byte) []ValveState {
+	toReturn := []ValveState{}
+	for _, v := range allValves {
+		if state.Exists(v) {
+			if n == 1 {
+				toReturn = append(toReturn, ValveState(valveMasks[v]))
+			} else {
+				nextLayerPermutations := permuteValves(state.Remove(v), n-1)
+				for _, next := range nextLayerPermutations {
+					toReturn = append(toReturn, next.Add(v))
+				}
+			}
+		}
+	}
+	return toReturn
+
+}
+
+func findMaxScore(pathState PathState, g *common.Graph[Valve]) int {
 	maxScore := pathState.score
 	for _, v := range allValves {
 		if v == pathState.current {
@@ -126,64 +171,7 @@ func findMaxScorePart1(pathState PathState, g *common.Graph[Valve]) int {
 		newPathState.unopened = pathState.unopened.Remove(v)
 		newPathState.score += flowRates[v] * int(newPathState.timeLeft)
 		newPathState.current = v
-		newPathScore := findMaxScorePart1(newPathState, g)
-		if newPathScore > maxScore {
-			maxScore = newPathScore
-		}
-	}
-	return maxScore
-}
-
-func findMaxScorePart2(pathState1, pathState2 PathState, g *common.Graph[Valve]) int {
-	maxScore := pathState1.score + pathState2.score
-
-	// try pathState1 movement
-	for _, v := range allValves {
-		if v == pathState1.current {
-			continue
-		}
-		if !pathState1.unopened.Exists(v) {
-			continue
-		}
-		distance := g.Distance(pathState1.current, v)
-		timeToOpen := distance + 1 // 1 minute to open valve, distance minutes to travel there
-		if timeToOpen > pathState1.timeLeft {
-			continue
-		}
-		newPathState1 := pathState1
-		newPathState2 := pathState2
-		newPathState1.timeLeft -= timeToOpen
-		newPathState1.unopened = pathState1.unopened.Remove(v)
-		newPathState2.unopened = newPathState1.unopened
-		newPathState1.score += flowRates[v] * int(newPathState1.timeLeft)
-		newPathState1.current = v
-		newPathScore := findMaxScorePart2(newPathState1, newPathState2, g)
-		if newPathScore > maxScore {
-			maxScore = newPathScore
-		}
-	}
-
-	// try pathState2 movement
-	for _, v := range allValves {
-		if v == pathState2.current {
-			continue
-		}
-		if !pathState2.unopened.Exists(v) {
-			continue
-		}
-		distance := g.Distance(pathState2.current, v)
-		timeToOpen := distance + 1 // 1 minute to open valve, distance minutes to travel there
-		if timeToOpen > pathState2.timeLeft {
-			continue
-		}
-		newPathState1 := pathState1
-		newPathState2 := pathState2
-		newPathState2.timeLeft -= timeToOpen
-		newPathState2.unopened = pathState2.unopened.Remove(v)
-		newPathState1.unopened = newPathState2.unopened
-		newPathState2.score += flowRates[v] * int(newPathState2.timeLeft)
-		newPathState2.current = v
-		newPathScore := findMaxScorePart2(newPathState1, newPathState2, g)
+		newPathScore := findMaxScore(newPathState, g)
 		if newPathScore > maxScore {
 			maxScore = newPathScore
 		}
@@ -217,6 +205,36 @@ func (vs ValveState) Remove(v Valve) ValveState {
 func (vs ValveState) Add(v Valve) ValveState {
 	// e.g. 1010 | 0100 = 1110
 	return ValveState(uint64(vs) | valveMasks[v])
+}
+
+func (vs ValveState) Invert() ValveState {
+	return ValveState(^uint64(vs))
+}
+
+func (vs ValveState) Exclude(toExclude ValveState) ValveState {
+	return ValveState(uint64(vs) & uint64(toExclude.Invert()))
+}
+
+func (vs ValveState) Count() byte {
+	c := byte(0)
+	n := int64(vs)
+	for n > 0 {
+		if n&int64(1) > 0 {
+			c++
+		}
+		n = n >> 1
+	}
+	return c
+}
+
+func (vs ValveState) String() string {
+	out := ""
+	for _, v := range allValves {
+		if vs.Exists(v) {
+			out += valveNames[v] + ","
+		}
+	}
+	return out
 }
 
 type PathState struct {
