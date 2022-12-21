@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/loov/hrtime"
@@ -72,6 +73,13 @@ func main() {
 	start := hrtime.Now()
 	part1(g)
 	fmt.Println("total time", hrtime.Since(start))
+
+	f, err := os.Create("day16part2cpuprof")
+	if err != nil {
+		panic(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
 
 	start = hrtime.Now()
 	part2(g)
