@@ -10,19 +10,21 @@ type GraphItem interface {
 type Graph[T GraphItem] struct {
 	nodes       []T
 	neighbors   map[byte]map[byte]struct{}
-	distanceMap map[byte]map[byte]byte
+	distanceMap []byte
+}
+
+func getGraphDistanceIndex(from, to byte) int {
+	return 255*int(from) + int(to)
 }
 
 func NewGraph[T GraphItem]() *Graph[T] {
 	return &Graph[T]{
-		distanceMap: make(map[byte]map[byte]byte),
-		neighbors:   make(map[byte]map[byte]struct{}),
+		neighbors: make(map[byte]map[byte]struct{}),
 	}
 }
 
 func (g *Graph[T]) AddNode(node T, neighbors []T) {
 	g.nodes = append(g.nodes, node)
-	g.distanceMap[node.ID()] = make(map[byte]byte)
 	g.neighbors[node.ID()] = make(map[byte]struct{})
 
 	for _, neighbor := range neighbors {
@@ -31,17 +33,20 @@ func (g *Graph[T]) AddNode(node T, neighbors []T) {
 }
 
 func (g *Graph[T]) initializeDistances() {
+	maxIndex := getGraphDistanceIndex(255, 255)
+	g.distanceMap = make([]byte, maxIndex+1)
 	for _, from := range g.nodes {
 		for _, to := range g.nodes {
+			currentIndex := getGraphDistanceIndex(from.ID(), to.ID())
 			if from.ID() == to.ID() {
-				g.distanceMap[from.ID()][to.ID()] = 0
+				g.distanceMap[currentIndex] = 0
 				continue
 			}
 			if _, ok := g.neighbors[from.ID()][to.ID()]; ok {
-				g.distanceMap[from.ID()][to.ID()] = 1
+				g.distanceMap[currentIndex] = 1
 				continue
 			}
-			g.distanceMap[from.ID()][to.ID()] = ^byte(0) // highest value for byte
+			g.distanceMap[currentIndex] = ^byte(0) // highest value for byte
 		}
 	}
 }
@@ -74,21 +79,22 @@ func (g *Graph[T]) UpdateDistance(from, to T) (keepGoing bool) {
 			keepGoing = false
 			return
 		}
-		d1 := g.distanceMap[from.ID()][neighbor]
-		d2 := g.distanceMap[neighbor][to.ID()]
+		d1 := g.distanceMap[getGraphDistanceIndex(from.ID(), neighbor)]
+		d2 := g.distanceMap[getGraphDistanceIndex(neighbor, to.ID())]
 		if d1 == ^byte(0) || d2 == ^byte(0) {
 			// not enough information to get distance from d1 to d2
 			continue
 		}
 
-		currentDistance := g.distanceMap[from.ID()][to.ID()]
+		currentIndex := getGraphDistanceIndex(from.ID(), to.ID())
+		currentDistance := g.distanceMap[currentIndex]
 		newDistance := d1 + d2
 		if currentDistance <= newDistance {
 			// don't replace current distance if it is already smaller
 			keepGoing = false
 			continue
 		}
-		g.distanceMap[from.ID()][to.ID()] = newDistance
+		g.distanceMap[currentIndex] = newDistance
 		keepGoing = false
 	}
 
@@ -96,7 +102,7 @@ func (g *Graph[T]) UpdateDistance(from, to T) (keepGoing bool) {
 }
 
 func (g *Graph[T]) Distance(from, to T) byte {
-	return g.distanceMap[from.ID()][to.ID()]
+	return g.distanceMap[getGraphDistanceIndex(from.ID(), to.ID())]
 }
 
 func (g *Graph[T]) DistanceString() string {
@@ -110,7 +116,7 @@ func (g *Graph[T]) DistanceString() string {
 	for _, n := range g.nodes {
 		out += n.String() + "\t"
 		for _, n2 := range g.nodes {
-			dist := g.distanceMap[n.ID()][n2.ID()]
+			dist := g.distanceMap[getGraphDistanceIndex(n.ID(), n2.ID())]
 			out += fmt.Sprintf("%d\t", dist)
 		}
 		out += "\n"
