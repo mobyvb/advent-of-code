@@ -77,3 +77,7 @@ func (c Coord) ManhattanRangeX(y, distance int) (min, max Coord, accessible bool
 func (c Coord) String() string {
 	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
 }
+
+func (c BigCoord) String() string {
+	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
+}
