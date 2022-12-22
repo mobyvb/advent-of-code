@@ -9,8 +9,16 @@ type Coord struct {
 	X, Y int
 }
 
+type BigCoord struct {
+	X, Y int64
+}
+
 func NewCoord(x, y int) Coord {
 	return Coord{X: x, Y: y}
+}
+
+func NewBigCoord(x, y int64) BigCoord {
+	return BigCoord{X: x, Y: y}
 }
 
 // Distance counts the number of steps (including diagonals) between the two coords.
