@@ -182,6 +182,16 @@ func (ld LineData) MustSumInts() int {
 	return sum
 }
 
+// GetInts converts each line in the LineData to an integer and return the list.
+func (ld LineData) GetInts() []int {
+	intList := make([]int, len(ld))
+	for i, l := range ld {
+		value := ParseInt(l)
+		intList[i] = value
+	}
+	return intList
+}
+
 // --- LineDatas functions ---
 
 // DropLastF removes the last row, but passes it into a callback
@@ -288,19 +298,6 @@ func (ids IntDatas) Sum() int {
 }
 
 // --- old functions (pre AoC 2022) ---
-
-// GetInts tries to convert each line in the LineData to an integer and return the list.
-func (ld LineData) GetInts() ([]int, error) {
-	intList := make([]int, len(ld))
-	for i, l := range ld {
-		value, err := strconv.Atoi(l)
-		if err != nil {
-			return intList, err
-		}
-		intList[i] = value
-	}
-	return intList, nil
-}
 
 // GetBinary tries to parse each line as binary into an integer.
 func (ld LineData) GetBinary() ([]int, error) {

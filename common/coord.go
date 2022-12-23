@@ -13,12 +13,20 @@ type BigCoord struct {
 	X, Y int64
 }
 
+type Coord3D struct {
+	X, Y, Z int
+}
+
 func NewCoord(x, y int) Coord {
 	return Coord{X: x, Y: y}
 }
 
 func NewBigCoord(x, y int64) BigCoord {
 	return BigCoord{X: x, Y: y}
+}
+
+func NewCoord3D(x, y, z int) Coord3D {
+	return Coord3D{X: x, Y: y, Z: z}
 }
 
 // Distance counts the number of steps (including diagonals) between the two coords.
@@ -80,4 +88,18 @@ func (c Coord) String() string {
 
 func (c BigCoord) String() string {
 	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
+}
+
+func (c Coord3D) Adjacent() (adj [6]Coord3D) {
+	adj[0] = NewCoord3D(c.X, c.Y, c.Z-1)
+	adj[1] = NewCoord3D(c.X, c.Y, c.Z+1)
+	adj[2] = NewCoord3D(c.X, c.Y-1, c.Z)
+	adj[3] = NewCoord3D(c.X, c.Y+1, c.Z)
+	adj[4] = NewCoord3D(c.X-1, c.Y, c.Z)
+	adj[5] = NewCoord3D(c.X+1, c.Y, c.Z)
+	return adj
+}
+
+func (c Coord3D) String() string {
+	return fmt.Sprintf("(%d,%d,%d)", c.X, c.Y, c.Z)
 }
