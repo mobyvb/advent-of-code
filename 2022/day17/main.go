@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -13,8 +14,9 @@ import (
 var shapes []Shape
 var directionList []Direction
 
-// heightGain maps a particular starting [shapeIndex][directionIndex] to height gain for pattern matching
-var heightGain map[byte]map[int]byte
+// patterns is a list of [shapeIndex]map[directionIndex]map[chamberHash][iterations,height]
+// used for detecting pattern repetition
+var patterns [5]map[int]map[int][2]int64
 
 func main() {
 	data := common.MustOpenFile(os.Args[1])[0]
@@ -50,7 +52,10 @@ func main() {
 }
 
 func simulateRocks(iterations int64, outputChamber bool) {
-	heightGain = make(map[byte]map[int]byte)
+	for i := range shapes {
+		patterns[i] = make(map[int]map[int][2]int64)
+	}
+
 	floor := NewShapeFromString("#######")
 	chamber := &Chamber{}
 	chamber.Project(common.NewBigCoord(0, 0), floor)
@@ -75,6 +80,10 @@ func simulateRocks(iterations int64, outputChamber bool) {
 
 		stopMoving := false
 		for !stopMoving {
+			if _, ok := patterns[nextShapeI][nextDirectionI]; !ok {
+				patterns[nextShapeI][nextDirectionI] = make(map[int][2]int64)
+			}
+
 			nextDirection := directionList[nextDirectionI]
 
 			var posToTry common.BigCoord
@@ -95,6 +104,31 @@ func simulateRocks(iterations int64, outputChamber bool) {
 			} else {
 				stopMoving = true
 				chamber.Project(currentShapePos, nextShape)
+				if _, ok := patterns[nextShapeI][nextDirectionI]; !ok {
+					patterns[nextShapeI][nextDirectionI] = make(map[int][2]int64)
+				}
+				if len(chamber.rows) >= 4 {
+					chamberHash := chamber.Hash()
+					if v, ok := patterns[nextShapeI][nextDirectionI][chamberHash]; ok {
+						// fmt.Println("cycle detected")
+						cycleIterations := v[0]
+						iterationDiff := i - cycleIterations
+						cycleHeight := v[1]
+						heightDiff := chamber.height - cycleHeight
+
+						//fmt.Println("current i", i)
+						//fmt.Println("current chamber height", chamber.height)
+						//fmt.Println("iterations diff", iterationDiff)
+						//fmt.Println("height diff", heightDiff)
+						repetitionsPossible := (iterations - i) / iterationDiff
+						//fmt.Println("repetitions possible", repetitionsPossible)
+						chamber.height += repetitionsPossible * heightDiff
+						i += repetitionsPossible * iterationDiff
+						//fmt.Println("new i", i)
+						//fmt.Println("new chamber height", chamber.height)
+					}
+					patterns[nextShapeI][nextDirectionI][chamberHash] = [2]int64{i, chamber.height}
+				}
 			}
 			nextDirectionI++
 			if nextDirectionI >= len(directionList) {
@@ -110,6 +144,7 @@ func simulateRocks(iterations int64, outputChamber bool) {
 		if nextShapeI >= len(shapes) {
 			nextShapeI = 0
 		}
+
 	}
 
 	towerHeight := chamber.height - 1 // exclude floor from tower height
@@ -253,6 +288,37 @@ func (c *Chamber) Reduce() {
 	}
 	c.rows = c.rows[cutSpot:]
 	c.rowOffset += int64(cutSpot)
+}
+
+// Hash returns a (maybe) unique representation of the shape of the top of the chamber
+func (c *Chamber) Hash() int {
+	/*
+		out := 0
+		for i := 0; i < 4; i++ {
+			rowIndex := len(c.rows) - 1 - i
+			out = out << 8
+			out = out & int(c.rows[rowIndex])
+		}
+		return out
+	*/
+	bitHeights := [7]int{}
+	for i := 0; i < 7; i++ {
+		mask := byte(1) << i
+		currentHeight := 1
+		for j := len(c.rows) - 1; j >= 0; j-- {
+			if byte(c.rows[j])&mask > 0 {
+				bitHeights[i] = currentHeight
+				break
+			}
+			currentHeight++
+		}
+	}
+
+	result := 0
+	for i, h := range bitHeights {
+		result += int(math.Pow(10, float64(i)) * float64(h))
+	}
+	return result
 }
 
 func (c *Chamber) String() string {
