@@ -100,6 +100,16 @@ func (c Coord3D) Adjacent() (adj [6]Coord3D) {
 	return adj
 }
 
+/*
+func (c Coord3D) LTE(c2 Coord3D) bool {
+	return c.X <= c2.X && c.Y <= c2.Y && c.Z <= c2.Z
+}
+*/
+
+func (c Coord3D) LT(c2 Coord3D) bool {
+	return c.X < c2.X || c.Y < c2.Y || c.Z < c2.Z
+}
+
 func (c Coord3D) String() string {
 	return fmt.Sprintf("(%d,%d,%d)", c.X, c.Y, c.Z)
 }
