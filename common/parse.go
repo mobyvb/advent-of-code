@@ -77,6 +77,16 @@ func ParseInt(s string) int {
 	return i
 }
 
+func ParseByte(s string) byte {
+	s = strings.TrimSpace(s)
+
+	i, err := strconv.ParseInt(s, 10, 8)
+	if err != nil {
+		panic(err)
+	}
+	return byte(i)
+}
+
 func ParseCommaSeparatedInts(s string) []int {
 	splitStr := strings.Split(s, ",")
 	out := []int{}
