@@ -62,6 +62,12 @@ func (c Coord) Step(c2 Coord) Coord {
 	return c
 }
 
+func (c Coord) Add(c2 Coord) Coord {
+	c.X += c2.X
+	c.Y += c2.Y
+	return c
+}
+
 func (c Coord) ManhattanDistance(c2 Coord) int {
 	return int(math.Abs(float64(c2.Y-c.Y)) + math.Abs(float64(c2.X-c.X)))
 }
@@ -80,6 +86,18 @@ func (c Coord) ManhattanRangeX(y, distance int) (min, max Coord, accessible bool
 	min.X -= xRange
 	max.X += xRange
 	return min, max, true
+}
+
+func (c Coord) AdjacentInclDiag() (adj [8]Coord) {
+	adj[0] = NewCoord(c.X, c.Y+1)
+	adj[1] = NewCoord(c.X, c.Y-1)
+	adj[2] = NewCoord(c.X-1, c.Y)
+	adj[3] = NewCoord(c.X-1, c.Y-1)
+	adj[4] = NewCoord(c.X-1, c.Y+1)
+	adj[5] = NewCoord(c.X+1, c.Y)
+	adj[6] = NewCoord(c.X+1, c.Y-1)
+	adj[7] = NewCoord(c.X+1, c.Y+1)
+	return adj
 }
 
 func (c Coord) String() string {
